@@ -31,6 +31,7 @@ function preferredLanguage(): I18nLanguage {
 }
 
 let language: I18nLanguage = preferredLanguage()
+document.documentElement.lang = language === "zh" ? "zh-CN" : "en"
 const listeners = new Set<() => void>()
 
 function subscribe(listener: () => void): () => void {

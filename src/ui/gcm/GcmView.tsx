@@ -70,6 +70,17 @@ const PERIOD_OPTIONS = [
 	{ value: "year", label: "Annual" },
 ] as const
 
+const FAILED_PREFIX = "Climate analysis failed: "
+
+function statusText(message: string): string {
+	if (message.startsWith(FAILED_PREFIX)) {
+		return I18N.t("Climate analysis failed: {detail}", {
+			detail: message.slice(FAILED_PREFIX.length),
+		})
+	}
+	return I18N.t(message)
+}
+
 export function GcmView() {
 	const gcm = useGcmRun()
 	const [requestedView, setView] = useState<GcmViewMode>("airTemperature")
@@ -301,10 +312,10 @@ export function GcmView() {
 		() => downscaledClimate ?? climate,
 		[downscaledClimate, climate],
 	)
-	const balance = useMemo(
-		() => GCM_BALANCE_VIEW.rows({ averages, targeting: gcm.targeting }),
-		[averages, gcm.targeting],
-	)
+	const balance = GCM_BALANCE_VIEW.rows({
+		averages,
+		targeting: gcm.targeting,
+	})
 	const means = useMemo(
 		() =>
 			snapshot
@@ -492,7 +503,7 @@ export function GcmView() {
 							terrainView
 								? I18N.t("Import terrain in the settings panel to view it")
 								: active && period === "now"
-									? gcm.state.message
+									? statusText(gcm.state.message)
 									: selection.emptyMessage
 						}
 					/>
@@ -543,7 +554,7 @@ export function GcmView() {
 					<ContinuousLegend
 						min={definition.min}
 						max={definition.max}
-						title={definition.label}
+						title={GCM_DISPLAY.label(mode)}
 						steps={24}
 						colorForValue={(value) =>
 							rgbToCss(GCM_DISPLAY.color({ mode, value }))
@@ -650,7 +661,7 @@ export function GcmView() {
 					<div className="mt-3 space-y-1">
 						<LabeledValueRow
 							label={I18N.t("Status")}
-							value={gcm.state.message.split("\n")[0]}
+							value={statusText(gcm.state.message).split("\n")[0]}
 						/>
 						{gcm.state.device && (
 							<LabeledValueRow
@@ -706,7 +717,7 @@ export function GcmView() {
 								uiTokens.text.muted,
 							)}
 						>
-							{gcm.state.message}
+							{statusText(gcm.state.message)}
 						</pre>
 					)}
 				</section>
@@ -740,7 +751,7 @@ export function GcmView() {
 						{means.map((entry) => (
 							<LabeledValueRow
 								key={entry.mode}
-								label={GCM_FIELDS.definition(entry.mode).label}
+								label={GCM_DISPLAY.label(entry.mode)}
 								value={GCM_DISPLAY.format({
 									mode: entry.mode,
 									value: entry.value,

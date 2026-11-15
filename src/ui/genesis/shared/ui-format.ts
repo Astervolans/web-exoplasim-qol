@@ -1,4 +1,5 @@
 import { TEMPERATURE } from "@/model/shared/units/temperature"
+import { I18N } from "@/ui/i18n"
 
 export type UnitSystem = "metric" | "imperial"
 
@@ -21,7 +22,7 @@ export function formatWithUnit(
 	options?: { compact?: boolean },
 ): string {
 	const separator = options?.compact ? "" : " "
-	return `${value.toFixed(digits)}${separator}${unit}`
+	return `${value.toFixed(digits)}${separator}${I18N.t(unit)}`
 }
 
 export function formatTemperature(

@@ -126,6 +126,17 @@ function terrainColor({
 			) as RgbColor)
 }
 
+const LAYERED_LABEL = /^(.*) · layer (10|[1-9])$/
+
+function label(mode: GcmMapMode): string {
+	const text = GCM_FIELDS.definition(mode).label
+	const match = LAYERED_LABEL.exec(text)
+	if (match) {
+		return `${I18N.t(match[1])} · ${I18N.t("layer {level}", { level: match[2] })}`
+	}
+	return I18N.t(text)
+}
+
 function format({ mode, value, unitSystem }: GcmFormattedValue): string {
 	if (
 		value === -1 &&
@@ -170,4 +181,5 @@ export const GCM_DISPLAY = {
 	color,
 	terrainColor,
 	format,
+	label,
 }

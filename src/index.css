@@ -10,11 +10,20 @@
 }
 
 @theme {
-	--font-jedar: "Jedar", serif;
+	--font-jedar:
+		"Jedar", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+		"Noto Sans SC", "Source Han Sans SC", "WenQuanYi Micro Hei", serif;
+	--font-sans:
+		Inter, "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+		"Noto Sans SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "Segoe UI",
+		system-ui, Avenir, Helvetica, Arial, sans-serif;
+	--font-mono:
+		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+		"Courier New", "Microsoft YaHei", "Noto Sans SC", monospace;
 }
 
 :root {
-	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family: var(--font-sans);
 	line-height: 1.5;
 	font-weight: 400;
 	color-scheme: light;

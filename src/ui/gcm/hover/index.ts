@@ -1,5 +1,4 @@
 import { GCM_CLASSIFICATION } from "@/model/climate/gcm/classification"
-import { GCM_FIELDS } from "@/model/climate/gcm/fields"
 import { GCM_DISPLAY } from "@/ui/gcm/field-display"
 import { GCM_FIELD_SAMPLE } from "@/ui/gcm/field-sample"
 import type {
@@ -23,7 +22,7 @@ function rows({ point, layer, unitSystem }: GcmHoverRequest): GcmHoverRow[] {
 				}
 			: layer.kind === "field" || layer.kind === "downscaled-field"
 				? {
-						label: GCM_FIELDS.definition(layer.mode).label,
+						label: GCM_DISPLAY.label(layer.mode),
 						value: GCM_DISPLAY.format({ mode: layer.mode, value, unitSystem }),
 					}
 				: {

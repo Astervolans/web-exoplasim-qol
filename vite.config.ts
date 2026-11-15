@@ -4,7 +4,7 @@ import path from "path"
 import { defineConfig } from "vite"
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(() => {
 	const base = process.env.VITE_BASE_PATH ?? "/"
 	// The shared-memory ranks need SharedArrayBuffer, which needs a
 	// cross-origin isolated page.
@@ -15,7 +15,7 @@ export default defineConfig(({ command }) => {
 
 	return {
 		base,
-		worker: { format: "es" },
+		worker: { format: "es" as const },
 		server: {
 			headers: isolationHeaders,
 			watch: {
@@ -33,18 +33,7 @@ export default defineConfig(({ command }) => {
 			entries: ["index.html"],
 			include: ["react-router-dom", "three"],
 		},
-		plugins: [
-			react(
-				command === "build"
-					? {
-							babel: {
-								plugins: [["babel-plugin-react-compiler"]],
-							},
-						}
-					: {},
-			),
-			tailwindcss(),
-		],
+		plugins: [react(), tailwindcss()],
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "./src"),
