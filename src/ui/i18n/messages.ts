@@ -436,7 +436,7 @@ export const ZH_MESSAGES: I18nMessages = {
 	"The star's mass in solar masses. Mass and age set its luminosity, radius and spectral type; the page then passes the resulting temperature and the flux at the planet's orbit to the model. Masses below about 0.08 solar masses describe a brown dwarf instead of a star.":
 		"以太阳质量表示的恒星质量。质量与年龄决定其光度、半径和光谱型；页面随后把得到的温度以及行星轨道处的通量传给模式。质量低于约 0.08 太阳质量的天体属于褐矮星而非恒星。",
 	"The star's age in billions of years. Older stars are brighter, so the same planet receives more energy over time. The slider stops at the end of the main sequence; white dwarfs and giants are not modelled.":
-		"以十亿年表示的恒星年龄。恒星越老越亮，因此同一颗行星随时间接收更多能量。滑块止于主序终结；白矮星和巨星未建模。",
+		"以 Gyr（十亿年）表示的恒星年龄。恒星越老越亮，因此同一颗行星随时间接收更多能量。滑块止于主序终结；白矮星和巨星未建模。",
 	"The tilt of the planet's spin axis relative to its orbit. 0° is no tilt. More tilt shifts sunlight between latitudes through the year and strengthens the seasons, especially near the poles.":
 		"行星自转轴相对于轨道的倾角。0° 表示没有倾斜。倾角越大，一年中阳光在纬度间的转移越强，季节也越明显，两极附近尤其如此。",
 	"How stretched the orbit is; 0 is a circle. Higher values make the distance to the star, and so the incoming energy, vary more over each orbit.":
@@ -552,6 +552,5 @@ export const ZH_MESSAGES: I18nMessages = {
 	"Resuming from checkpoint": "从检查点恢复",
 	"Climate analysis failed: {detail}": "气候分析失败：{detail}",
 	days: "天",
-	Gyr: "十亿年",
 	years: "年",
 }
