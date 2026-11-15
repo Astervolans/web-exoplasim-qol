@@ -17,6 +17,7 @@ import { DetailsIcon } from "@/ui/components/primitives/icons/DetailsIcon"
 import { LabeledValueRow } from "@/ui/components/primitives/LabeledValueRow"
 import { LanguageToggle } from "@/ui/components/primitives/LanguageToggle"
 import { SegmentedControl } from "@/ui/components/primitives/SegmentedControl"
+import { TextSizeToggle } from "@/ui/components/primitives/TextSizeToggle"
 import { Tooltip } from "@/ui/components/primitives/Tooltip"
 import { uiTokens } from "@/ui/components/tokens"
 import { GCM_BALANCE_VIEW } from "@/ui/gcm/balance-view"
@@ -336,7 +337,10 @@ export function GcmView() {
 						</p>
 					</div>
 					<div className="relative flex flex-col items-end gap-1 text-right">
-						<LanguageToggle />
+						<div className="flex items-center gap-1">
+							<LanguageToggle />
+							<TextSizeToggle />
+						</div>
 						<div className={cx(uiTokens.type.value, uiTokens.text.primary)}>
 							{climateView && climate
 								? averages.climateYears < GCM_AVERAGES.CLIMATE_YEARS

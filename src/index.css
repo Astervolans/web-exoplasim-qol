@@ -20,6 +20,10 @@
 	color-scheme: light;
 }
 
+html[data-text-size="large"] {
+	font-size: 24px;
+}
+
 body {
 	margin: 0;
 	display: flex;

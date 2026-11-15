@@ -17,7 +17,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => (
 	<div
 		className={cx(
-			"text-[10px] text-slate-400",
+			"text-[0.625rem] text-slate-400",
 			centered ? "flex items-center justify-center text-center" : "",
 			className,
 		)}

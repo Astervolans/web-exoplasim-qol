@@ -33,9 +33,9 @@ const buttonToneClassName: Record<
 }
 
 const buttonSizeClassName: Record<SegmentedSize, string> = {
-	xs: "px-1 py-0.5 text-[9px]",
-	sm: "px-2 py-1 text-[10px]",
-	md: "px-2.5 py-1 text-[10px]",
+	xs: "px-1 py-0.5 text-[0.5625rem]",
+	sm: "px-2 py-1 text-[0.625rem]",
+	md: "px-2.5 py-1 text-[0.625rem]",
 }
 
 interface SegmentedControlProps<T extends string> {

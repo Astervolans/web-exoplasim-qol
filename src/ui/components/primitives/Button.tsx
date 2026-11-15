@@ -18,8 +18,8 @@ const toneClassName: Record<ButtonTone, { active: string; idle: string }> = {
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-	sm: "px-2 py-1 text-[10px]",
-	md: "px-3 py-2 text-[10px]",
+	sm: "px-2 py-1 text-[0.625rem]",
+	md: "px-3 py-2 text-[0.625rem]",
 }
 
 const shapeClassName: Record<ButtonShape, string> = {
