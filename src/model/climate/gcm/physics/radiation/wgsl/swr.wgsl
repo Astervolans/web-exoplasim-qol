@@ -31,6 +31,13 @@ fn at(field: u32, l: u32, h: u32) -> u32 {
 	return field + l * NHOR + h;
 }
 
+// Reflectances are products of f32 transmittances; at grazing sun and thick
+// air they can round just past 1, which makes 1 - r·r zero and the adding
+// method divide by zero. Bound them and floor every such denominator.
+fn bounded(value: f32) -> f32 {
+	return clamp(value, 0.0, 1.0);
+}
+
 fn ozone_absorption(o3: f32) -> f32 {
 	return (0.02118 * o3 / (1.0 + 0.042 * o3 + 0.000323 * (o3 * o3))
 		+ 1.082 * o3 / precise_pow(1.0 + 138.6 * o3, 0.805)
@@ -182,36 +189,40 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 		r1s[l] = ra1s;
 		r2s[l] = ra2s;
 		let surface = l == NLEV - 1u;
-		rb1[l] = select(0.0, rcsSurface, surface) + rcl1[l] * cc;
-		rb1s[l] = select(0.0, rcsuSurface, surface) + rcl1s[l] * cc;
+		rb1[l] = bounded(select(0.0, rcsSurface, surface) + rcl1[l] * cc);
+		rb1s[l] = bounded(select(0.0, rcsuSurface, surface) + rcl1s[l] * cc);
 		var o3 = xo3l[l];
-		let to3 = (1.0 - ozone_absorption(o3)) / to3t;
-		to3t = to3t * to3;
+		let down = clamp(1.0 - ozone_absorption(o3), 0.0, 1.0);
+		let to3 = min(down / max(to3t, 1.0e-4), 10.0);
+		to3t = max(to3t * to3, 1.0e-4);
 		o3 = xo3t + ZMBAR * (o3t - o3l[l]);
-		let to3u = to3tu / (1.0 - ozone_absorption(o3));
-		to3tu = to3tu / to3u;
+		let up = max(1.0 - clamp(ozone_absorption(o3), 0.0, 1.0), 1.0e-4);
+		let to3u = min(to3tu / up, 10.0);
+		to3tu = max(to3tu / max(to3u, 1.0e-4), 1.0e-4);
 		tb1[l] = 1.0 - (1.0 - to3) * (1.0 - cc) - rb1[l];
 		tb1u[l] = 1.0 - (1.0 - to3u) * (1.0 - cc) - rb1s[l];
-		let m1 = 1.0 / (1.0 - ra1s * rb1s[l]);
+		let m1 = 1.0 / max(1.0 - ra1s * rb1s[l], 1.0e-6);
 		ra1 = ra1 + ta1 * rb1[l] * ta1s * m1;
 		ta1 = ta1 * tb1[l] * m1;
-		ra1s = rb1s[l] + tb1u[l] * ra1s * tb1[l] * m1;
+		ra1s = bounded(rb1s[l] + tb1u[l] * ra1s * tb1[l] * m1);
 		ta1s = tb1u[l] * ta1s * m1;
 
-		rb2[l] = rcl2[l] * cc;
-		rb2s[l] = rcl2s[l] * cc;
+		rb2[l] = bounded(rcl2[l] * cc);
+		rb2s[l] = bounded(rcl2s[l] * cc);
 		var wv = ywvl[l];
-		let twv = (1.0 - vapour_absorption(wv)) / twvt;
-		twvt = twvt * twv;
+		let vapour = clamp(1.0 - vapour_absorption(wv), 0.0, 1.0);
+		let twv = min(vapour / max(twvt, 1.0e-4), 10.0);
+		twvt = max(twvt * twv, 1.0e-4);
 		wv = ywvt + ZBETTA * (wvt - wvl[l]);
-		let twvu = twvtu / (1.0 - vapour_absorption(wv));
-		twvtu = twvtu / twvu;
+		let vapourUp = max(1.0 - clamp(vapour_absorption(wv), 0.0, 1.0), 1.0e-4);
+		let twvu = min(twvtu / vapourUp, 10.0);
+		twvtu = max(twvtu / max(twvu, 1.0e-4), 1.0e-4);
 		tb2[l] = 1.0 - (1.0 - twv) * (1.0 - cc) - (1.0 - tcl2[l]) * cc;
 		tb2u[l] = 1.0 - (1.0 - twvu) * (1.0 - cc) - (1.0 - tcl2s[l]) * cc;
-		let m2 = 1.0 / (1.0 - ra2s * rb2s[l]);
+		let m2 = 1.0 / max(1.0 - ra2s * rb2s[l], 1.0e-6);
 		ra2 = ra2 + ta2 * rb2[l] * ta2s * m2;
 		ta2 = ta2 * tb2[l] * m2;
-		ra2s = rb2s[l] + tb2u[l] * ra2s * tb2[l] * m2;
+		ra2s = bounded(rb2s[l] + tb2u[l] * ra2s * tb2[l] * m2);
 		ta2s = tb2u[l] * ta2s * m2;
 	}
 	t1[NLEV] = ta1;
@@ -224,13 +235,13 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 	let dalb = state[DALB + h];
 	let salb1 = state[DSALB + h];
 	let salb2 = state[DSALB + NHOR + h];
-	ra1s = select(dalb, salb1, NSTARTEMP);
-	ra2s = select(dalb, salb2, NSTARTEMP);
+	ra1s = bounded(select(dalb, salb1, NSTARTEMP));
+	ra2s = bounded(select(dalb, salb2, NSTARTEMP));
 	let dls = state[DLS + h];
 	let dicec = state[DICEC + h];
 	let water = (1.0 - dls) * (1.0 - dicec) * min(0.05 / (mu0 + 0.15), 0.15);
-	let nalb1 = dls * salb1 + (1.0 - dls) * dicec * salb1 + water;
-	let nalb2 = dls * salb2 + (1.0 - dls) * dicec * salb2 + water;
+	let nalb1 = bounded(dls * salb1 + (1.0 - dls) * dicec * salb1 + water);
+	let nalb2 = bounded(dls * salb2 + (1.0 - dls) * dicec * salb2 + water);
 	state[DSALB + h] = nalb1;
 	state[DSALB + NHOR + h] = nalb2;
 	var albedo: f32;
@@ -240,8 +251,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 		albedo = dls * dalb + (1.0 - dls) * dicec * dalb + water;
 	}
 	state[DALB + h] = albedo;
-	ra1 = select(albedo, nalb1, NSTARTEMP);
-	ra2 = select(albedo, nalb2, NSTARTEMP);
+	ra1 = bounded(select(albedo, nalb1, NSTARTEMP));
+	ra2 = bounded(select(albedo, nalb2, NSTARTEMP));
 
 	var rl1: array<f32, NLEP>;
 	var rl2: array<f32, NLEP>;
@@ -252,12 +263,12 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 		rl2[l + 1] = ra2;
 		rl1s[l + 1] = ra1s;
 		rl2s[l + 1] = ra2s;
-		let d1 = 1.0 - ra1s * rb1s[l];
+		let d1 = max(1.0 - ra1s * rb1s[l], 1.0e-6);
 		ra1 = rb1[l] + tb1[l] * ra1 * tb1u[l] / d1;
-		ra1s = rb1s[l] + tb1u[l] * ra1s * tb1u[l] / d1;
-		let d2 = 1.0 - ra2s * rb2s[l];
+		ra1s = bounded(rb1s[l] + tb1u[l] * ra1s * tb1u[l] / d1);
+		let d2 = max(1.0 - ra2s * rb2s[l], 1.0e-6);
 		ra2 = rb2[l] + tb2[l] * ra2 * tb2u[l] / d2;
-		ra2s = rb2s[l] + tb2u[l] * ra2s * tb2u[l] / d2;
+		ra2s = bounded(rb2s[l] + tb2u[l] * ra2s * tb2u[l] / d2);
 	}
 	rl1[0] = ra1;
 	rl2[0] = ra2;
@@ -265,8 +276,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 	rl2s[0] = ra2s;
 
 	for (var l = 0u; l < NLEP; l++) {
-		let m1 = 1.0 / (1.0 - r1s[l] * rl1s[l]);
-		let m2 = 1.0 / (1.0 - r2s[l] * rl2s[l]);
+		let m1 = 1.0 / max(1.0 - r1s[l] * rl1s[l], 1.0e-6);
+		let m2 = 1.0 / max(1.0 - r2s[l] * rl2s[l], 1.0e-6);
 		let fu = -t1[l] * rl1[l] * m1 * ftop1 + -t2[l] * rl2[l] * m2 * ftop2;
 		let fd = t1[l] * m1 * ftop1 + t2[l] * m2 * ftop2;
 		state[at(DFU, l, h)] = fu;

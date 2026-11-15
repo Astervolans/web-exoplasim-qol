@@ -6,6 +6,7 @@ import { GCM_CONTINUATION } from "@/model/climate/gcm/continuation"
 import { GCM_DEVICE } from "@/model/climate/gcm/device"
 import { LAYOUT } from "@/model/climate/gcm/layout"
 import type {
+	GcmInstabilityDetailRequest,
 	GcmStateWrite,
 	GcmWorkerModel,
 	GcmWorkerPost,
@@ -23,6 +24,131 @@ import type { GcmLayerCount } from "@/model/climate/gcm/types"
 // mapped batches waiting to be read and posted, so a new batch never waits
 // for an older one's readback.
 const STAGING_BUFFERS = STEPPER.IN_FLIGHT + 2
+
+const SNAPSHOT_FIELD_NAMES = [
+	"surface temperature",
+	"2 m air temperature",
+	"lowest-layer u wind",
+	"lowest-layer v wind",
+	"cloud cover",
+	"precipitation",
+	"surface pressure",
+	"water vapor",
+	"sea-ice cover",
+	"snow depth",
+	"soil water",
+	"albedo",
+	"jet-stream u wind",
+	"jet-stream v wind",
+	"outgoing longwave radiation",
+	"land fraction",
+	"TOA net radiation",
+	"surface net heat",
+	"evaporation",
+	"runoff",
+	"forest cover",
+	"leaf area index",
+	"snowfall",
+	"snowmelt",
+	"sea-ice thickness",
+	"glacier cover",
+	"sea-level pressure",
+	"surface shortwave",
+	"surface longwave",
+	"sensible heat flux",
+	"latent heat flux",
+	"convective precipitation",
+	"large-scale precipitation",
+	"TOA shortwave",
+	"TOA longwave",
+	"surface temperature minimum",
+	"surface temperature maximum",
+	"diurnal temperature range",
+	"daily temperature range sum",
+	"daily temperature range days",
+	"net primary production",
+	"solar zenith cosine",
+	"CAPE",
+	"neutral buoyancy pressure",
+	"potential intensity",
+	"entropy deficit",
+	"absolute vorticity",
+	"ventilation index",
+	"ventilation-reduced intensity",
+	"genesis potential index",
+	"wind shear",
+]
+
+const LEVEL_FIELD_NAMES = [
+	"temperature",
+	"u wind",
+	"v wind",
+	"relative humidity",
+	"cloud cover",
+]
+
+function formatValue(value: number): string {
+	return Number.isFinite(value) ? value.toPrecision(4) : String(value)
+}
+
+function describeInstability({
+	latitudes,
+	longitudes,
+	values,
+}: GcmInstabilityDetailRequest): string | null {
+	let index = 0
+	while (index < values.length && Number.isFinite(values[index])) index++
+	if (index >= values.length) return null
+	const points = latitudes * longitudes
+	const field = Math.floor(index / points)
+	const cell = index - field * points
+	const row = Math.floor(cell / longitudes)
+	const column = cell - row * longitudes
+	const latitude = 90 - (180 * (row + 0.5)) / latitudes
+	const longitude = ((column + 0.5) * 360) / longitudes
+	const lon = longitude > 180 ? longitude - 360 : longitude
+	const where = `${Math.abs(latitude).toFixed(1)}°${latitude >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? "E" : "W"}`
+	const level = Math.floor((field - SNAPSHOT_FIELD_NAMES.length) / 5) + 1
+	const name =
+		field < SNAPSHOT_FIELD_NAMES.length
+			? SNAPSHOT_FIELD_NAMES[field]
+			: `${LEVEL_FIELD_NAMES[(field - SNAPSHOT_FIELD_NAMES.length) % 5]} at level ${level}`
+	const at = (slot: number) => values[slot * points + cell]
+	const levels = Math.round(
+		(values.length / points - SNAPSHOT_FIELD_NAMES.length) / 5,
+	)
+	const temperatures: string[] = []
+	const winds: string[] = []
+	const clouds: string[] = []
+	for (let l = 0; l < levels; l++) {
+		const base = SNAPSHOT_FIELD_NAMES.length + 5 * l
+		temperatures.push(formatValue(at(base)))
+		winds.push(`${formatValue(at(base + 1))}/${formatValue(at(base + 2))}`)
+		clouds.push(formatValue(at(base + 4)))
+	}
+	const lowest = SNAPSHOT_FIELD_NAMES.length + 5 * (levels - 1)
+	const counts: string[] = []
+	const fieldCount = Math.floor(values.length / points)
+	for (let f = 0; f < fieldCount; f++) {
+		let bad = 0
+		for (let c = 0; c < points; c++)
+			if (!Number.isFinite(values[f * points + c])) bad++
+		if (bad === 0) continue
+		const name =
+			f < SNAPSHOT_FIELD_NAMES.length
+				? SNAPSHOT_FIELD_NAMES[f]
+				: `${LEVEL_FIELD_NAMES[(f - SNAPSHOT_FIELD_NAMES.length) % 5]} L${Math.floor((f - SNAPSHOT_FIELD_NAMES.length) / 5) + 1}`
+		counts.push(`${name}=${bad}`)
+	}
+	return [
+		`${name} at ${where} is ${values[index]}`,
+		`column: p=${formatValue(at(6))} Pa, T2m=${formatValue(at(1))} K, mu0=${formatValue(at(41))}, land=${formatValue(at(15))}, ice=${formatValue(at(8))}, snow=${formatValue(at(9))} m, albedo=${formatValue(at(11))}, soil=${formatValue(at(10))}, SWS=${formatValue(at(27))} W/m², LWS=${formatValue(at(28))} W/m², sensible=${formatValue(at(29))}, latent=${formatValue(at(30))}, qLow=${formatValue(at(lowest + 3))}`,
+		`levels: T=[${temperatures.join(", ")}]`,
+		`        u/v=[${winds.join(", ")}]`,
+		`        cloud=[${clouds.join(", ")}]`,
+		`bad fields: ${counts.join(", ")}`,
+	].join("\n")
+}
 
 let model: GcmWorkerModel | null = null
 let step = 0
@@ -318,7 +444,14 @@ function submit(current: GcmWorkerModel) {
 			(snapshot) => !snapshot.values.every(Number.isFinite),
 		)
 		if (unstable) {
-			fail(`The model became unstable at step ${unstable.step}`)
+			const detail = describeInstability({
+				latitudes: context.state.dimensions.latitudes,
+				longitudes: context.state.dimensions.longitudes,
+				values: unstable.values,
+			})
+			fail(
+				`The model became unstable at step ${unstable.step}${detail ? `: ${detail}` : ""}`,
+			)
 			return
 		}
 		let closed = false

@@ -97,3 +97,9 @@ export interface GcmStateWrite {
 	name: string
 	values: ArrayLike<number>
 }
+
+export interface GcmInstabilityDetailRequest {
+	latitudes: number
+	longitudes: number
+	values: Float32Array
+}
