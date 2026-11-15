@@ -131,6 +131,7 @@ export function InteriorDiagram(props: GcmInteriorDiagramProps) {
 			<polygon
 				points={`${axisX - 3.5},${axisY + 5} ${axisX + 3.5},${axisY + 5} ${axisX},${axisY - 3}`}
 				fill={uiPalette.celestial.orbitFocus}
+				transform={`rotate(${tilt} ${axisX} ${axisY})`}
 			/>
 			<path
 				d={arcPath({
