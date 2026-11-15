@@ -15,6 +15,7 @@ import { ContinuousLegend } from "@/ui/components/primitives/charts/ContinuousLe
 import { IconButton } from "@/ui/components/primitives/IconButton"
 import { DetailsIcon } from "@/ui/components/primitives/icons/DetailsIcon"
 import { LabeledValueRow } from "@/ui/components/primitives/LabeledValueRow"
+import { LanguageToggle } from "@/ui/components/primitives/LanguageToggle"
 import { SegmentedControl } from "@/ui/components/primitives/SegmentedControl"
 import { Tooltip } from "@/ui/components/primitives/Tooltip"
 import { uiTokens } from "@/ui/components/tokens"
@@ -40,6 +41,7 @@ import { useGcmClimate } from "@/ui/gcm/useGcmClimate"
 import { useGcmRun } from "@/ui/gcm/useGcmRun"
 import { GCM_ZONE_CIRCLES } from "@/ui/gcm/zone-circles"
 import { rgbToCss, type UnitSystem } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const UNIT_OPTIONS = [
 	{ value: "metric", label: "Metric" },
@@ -88,14 +90,15 @@ export function GcmView() {
 		value: String(level),
 		label:
 			level === 1
-				? "1 · top"
+				? I18N.t("{level} · top", { level })
 				: level === gcm.config.layers
-					? `${level} · bottom`
+					? I18N.t("{level} · bottom", { level })
 					: String(level),
 	}))
 	const [period, setPeriod] = useState<GcmPeriod>("now")
 	const [monthIndex, setMonthIndex] = useState<number | null>(null)
 	const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric")
+	I18N.useLanguage()
 	const [detail, setDetail] = useState<GcmMapDetail>("model")
 	const [showStarPoints, setShowStarPoints] = useState(false)
 	const [showZoneCircles, setShowZoneCircles] = useState(false)
@@ -105,7 +108,8 @@ export function GcmView() {
 	const groupView = atmosphere
 		? GCM_FIELDS.layerMode({ ...atmosphere, level: 10 })
 		: view
-	const modeGroup = GCM_MODE_GROUPS.find(
+	const modeGroups = GCM_MODE_GROUPS.groups()
+	const modeGroup = modeGroups.find(
 		(group) =>
 			group.defaultView === groupView ||
 			group.children.some((child) => child.value === groupView),
@@ -328,15 +332,27 @@ export function GcmView() {
 						</h1>
 						<p className={cx(uiTokens.type.label, uiTokens.text.muted)}>
 							{gcm.state.truncation > 0 ? `T${gcm.state.truncation} ` : ""}
-							general circulation model running in your browser
+							{I18N.t("general circulation model running in your browser")}
 						</p>
 					</div>
-					<div className="relative text-right">
+					<div className="relative flex flex-col items-end gap-1 text-right">
+						<LanguageToggle />
 						<div className={cx(uiTokens.type.value, uiTokens.text.primary)}>
 							{climateView && climate
-								? `${climateDefinition.label} · ${averages.climateYears}-year monthly climatology${averages.climateYears < GCM_AVERAGES.CLIMATE_YEARS ? " (building to 10 years)" : ""}`
+								? averages.climateYears < GCM_AVERAGES.CLIMATE_YEARS
+									? I18N.t(
+											"{label} · {years}-year monthly climatology (building to 10 years)",
+											{
+												label: climateDefinition.label,
+												years: averages.climateYears,
+											},
+										)
+									: I18N.t("{label} · {years}-year monthly climatology", {
+											label: climateDefinition.label,
+											years: averages.climateYears,
+										})
 								: terrainView
-									? "Terrain elevation"
+									? I18N.t("Terrain elevation")
 									: selection.label}
 						</div>
 						<GcmHoverReadout
@@ -348,31 +364,40 @@ export function GcmView() {
 					</div>
 				</header>
 				<div className="flex flex-wrap gap-1">
-					{GCM_MODE_GROUPS.filter(
-						(group) =>
-							gcm.config.stormclim || !GCM_FIELDS.stormMode(group.defaultView),
-					).map((group) => (
-						<Button
-							key={group.defaultView}
-							selected={group === modeGroup}
-							disabled={group.defaultView === "koppen" && !averages.koppen}
-							title={
-								group.defaultView === "koppen"
-									? averages.koppen
-										? `Climate classes averaged over ${averages.climateYears} complete years (up to 10)`
-										: "Available after the first complete model year"
-									: group.label
-							}
-							onClick={() => setView(group.defaultView)}
-						>
-							{group.label}
-						</Button>
-					))}
+					{modeGroups
+						.filter(
+							(group) =>
+								gcm.config.stormclim ||
+								!GCM_FIELDS.stormMode(group.defaultView),
+						)
+						.map((group) => (
+							<Button
+								key={group.defaultView}
+								selected={group === modeGroup}
+								disabled={group.defaultView === "koppen" && !averages.koppen}
+								title={
+									group.defaultView === "koppen"
+										? averages.koppen
+											? I18N.t(
+													"Climate classes averaged over {years} complete years (up to 10)",
+													{ years: averages.climateYears },
+												)
+											: I18N.t("Available after the first complete model year")
+										: group.label
+								}
+								onClick={() => setView(group.defaultView)}
+							>
+								{group.label}
+							</Button>
+						))}
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
 					{!terrainView && (
 						<SegmentedControl
-							options={PERIOD_OPTIONS}
+							options={PERIOD_OPTIONS.map((option) => ({
+								...option,
+								label: I18N.t(option.label),
+							}))}
 							value={climateView ? "year" : period}
 							onChange={(next) => {
 								setPeriod(next)
@@ -382,7 +407,10 @@ export function GcmView() {
 					)}
 					{!terrainView && (
 						<SegmentedControl
-							options={DETAIL_OPTIONS}
+							options={DETAIL_OPTIONS.map((option) => ({
+								...option,
+								label: I18N.t(option.label),
+							}))}
 							value={detail}
 							onChange={setDetail}
 						/>
@@ -405,7 +433,9 @@ export function GcmView() {
 					)}
 					{atmosphere && (
 						<div className="flex items-center gap-2">
-							<span className={uiTokens.type.label}>Model layer</span>
+							<span className={uiTokens.type.label}>
+								{I18N.t("Model layer")}
+							</span>
 							<SegmentedControl
 								options={levelOptions}
 								value={String(atmosphere.level)}
@@ -444,7 +474,7 @@ export function GcmView() {
 				<div className="relative min-h-0 flex-1">
 					{climateView && (climateMap.pending || climateMap.error) && (
 						<p role="status" className={uiTokens.field.note}>
-							{climateMap.error ?? "Updating climate map…"}
+							{climateMap.error ?? I18N.t("Updating climate map…")}
 						</p>
 					)}
 					<GcmMap
@@ -456,7 +486,7 @@ export function GcmView() {
 						readZoneCircles={readZoneCircles}
 						emptyMessage={
 							terrainView
-								? "Import terrain in the settings panel to view it"
+								? I18N.t("Import terrain in the settings panel to view it")
 								: active && period === "now"
 									? gcm.state.message
 									: selection.emptyMessage
@@ -465,14 +495,14 @@ export function GcmView() {
 					{!sidebarOpen && (
 						<div className="absolute top-3 right-3 z-20">
 							<Tooltip
-								content="Show settings panel"
+								content={I18N.t("Show settings panel")}
 								position="bottom"
 								align="end"
 							>
 								<IconButton
 									tone="overlay"
 									size="sm"
-									aria-label="Show settings panel"
+									aria-label={I18N.t("Show settings panel")}
 									aria-expanded={false}
 									aria-controls="gcm-sidebar"
 									onClick={() => setSidebarOpen(true)}
@@ -488,7 +518,7 @@ export function GcmView() {
 						<ContinuousLegend
 							min={0}
 							max={terrainSummary.maxM}
-							title="Elevation"
+							title={I18N.t("Elevation")}
 							steps={24}
 							colorForValue={(value) =>
 								rgbToCss(
@@ -533,13 +563,13 @@ export function GcmView() {
 			>
 				<section>
 					<PanelHeader
-						title="Run"
+						title={I18N.t("Run")}
 						action={
 							<IconButton
 								tone="borderless"
 								size="xs"
-								title="Hide settings panel"
-								aria-label="Hide settings panel"
+								title={I18N.t("Hide settings panel")}
+								aria-label={I18N.t("Hide settings panel")}
 								aria-expanded={true}
 								aria-controls="gcm-sidebar"
 								onClick={() => setSidebarOpen(false)}
@@ -563,26 +593,28 @@ export function GcmView() {
 					<div className="flex flex-wrap gap-2">
 						{active ? (
 							status === "paused" ? (
-								<Button onClick={gcm.resume}>Resume</Button>
+								<Button onClick={gcm.resume}>{I18N.t("Resume")}</Button>
 							) : (
 								<Button onClick={gcm.pause} disabled={status !== "running"}>
-									Pause
+									{I18N.t("Pause")}
 								</Button>
 							)
 						) : (
 							<Button selected onClick={() => void gcm.start()}>
-								Start
+								{I18N.t("Start")}
 							</Button>
 						)}
 						<Button
 							onClick={gcm.save}
 							disabled={status !== "running" && status !== "paused"}
-							title="Save the model state and climate averages to a file, preserving the current pause state"
+							title={I18N.t(
+								"Save the model state and climate averages to a file, preserving the current pause state",
+							)}
 						>
-							Save
+							{I18N.t("Save")}
 						</Button>
 						<Button onClick={() => checkpointFile.current?.click()}>
-							Load
+							{I18N.t("Load")}
 						</Button>
 						<Button
 							onClick={() => {
@@ -593,9 +625,11 @@ export function GcmView() {
 								setHover(null)
 							}}
 							disabled={status === "idle" && !latest}
-							title="Stops the run and clears results so settings can be changed"
+							title={I18N.t(
+								"Stops the run and clears results so settings can be changed",
+							)}
 						>
-							Clear
+							{I18N.t("Clear")}
 						</Button>
 						<input
 							ref={checkpointFile}
@@ -611,19 +645,24 @@ export function GcmView() {
 					</div>
 					<div className="mt-3 space-y-1">
 						<LabeledValueRow
-							label="Status"
+							label={I18N.t("Status")}
 							value={gcm.state.message.split("\n")[0]}
 						/>
 						{gcm.state.device && (
 							<LabeledValueRow
-								label={gcm.engine === "gpu" ? "GPU" : "Workers"}
+								label={gcm.engine === "gpu" ? "GPU" : I18N.t("Workers")}
 								value={gcm.state.device}
 							/>
 						)}
 						{gcm.state.stepsPerSecond > 0 && (
 							<LabeledValueRow
-								label="Speed"
-								value={`${((gcm.state.stepsPerSecond * gcm.config.timestepMinutes) / 1440).toFixed(2)} model days/s`}
+								label={I18N.t("Speed")}
+								value={I18N.t("{speed} model days/s", {
+									speed: (
+										(gcm.state.stepsPerSecond * gcm.config.timestepMinutes) /
+										1440
+									).toFixed(2),
+								})}
 							/>
 						)}
 						{latest &&
@@ -638,7 +677,7 @@ export function GcmView() {
 					{gcm.targeting && (
 						<div
 							className="mt-3 space-y-1"
-							aria-label="Temperature targeting progress"
+							aria-label={I18N.t("Temperature targeting progress")}
 							aria-live="polite"
 						>
 							{GCM_TARGETING_VIEW.rows({
@@ -671,13 +710,18 @@ export function GcmView() {
 					<PanelHeader
 						title={
 							period === "now" || climateView
-								? "Global means"
-								: `Global means · ${period === "month" ? "monthly" : "annual"}`
+								? I18N.t("Global means")
+								: period === "month"
+									? I18N.t("Global means · monthly")
+									: I18N.t("Global means · annual")
 						}
 						action={
 							<SegmentedControl
 								size="xs"
-								options={UNIT_OPTIONS}
+								options={UNIT_OPTIONS.map((option) => ({
+									...option,
+									label: I18N.t(option.label),
+								}))}
 								value={unitSystem}
 								onChange={setUnitSystem}
 							/>
@@ -686,7 +730,7 @@ export function GcmView() {
 					<div className="space-y-1">
 						{means.length === 0 && (
 							<p className={uiTokens.field.note}>
-								Appears once the model is running
+								{I18N.t("Appears once the model is running")}
 							</p>
 						)}
 						{means.map((entry) => (
@@ -703,11 +747,12 @@ export function GcmView() {
 					</div>
 				</section>
 				<section>
-					<PanelHeader title="Settings" />
+					<PanelHeader title={I18N.t("Settings")} />
 					{active && (
 						<p className={cx("-mt-2 mb-3", uiTokens.field.note)}>
-							Pause to edit climate settings, then resume to apply them. Model
-							and structural settings stay locked until you clear the run.
+							{I18N.t(
+								"Pause to edit climate settings, then resume to apply them. Model and structural settings stay locked until you clear the run.",
+							)}
 						</p>
 					)}
 					<GcmConfigPanel

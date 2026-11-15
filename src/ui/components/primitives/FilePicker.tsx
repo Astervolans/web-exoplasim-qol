@@ -3,6 +3,7 @@ import { cx } from "@/ui/components/lib"
 import { Button } from "@/ui/components/primitives/Button"
 import { InputLabel } from "@/ui/components/primitives/InputLabel"
 import { uiTokens } from "@/ui/components/tokens"
+import { I18N } from "@/ui/i18n"
 
 interface FilePickerProps {
 	// [JUSTIFICATION] File pickers outside model settings do not require help text.
@@ -54,7 +55,7 @@ export function FilePicker({
 				disabled={disabled}
 				onClick={() => input.current?.click()}
 			>
-				Browse…
+				{I18N.t("Browse…")}
 			</Button>
 			<input
 				ref={input}

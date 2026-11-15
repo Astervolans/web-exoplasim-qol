@@ -3,6 +3,7 @@ import { cx } from "@/ui/components/lib"
 import { uiTokens } from "@/ui/components/tokens"
 import { GCM_TERRAIN_PREVIEW } from "@/ui/gcm/terrain/preview"
 import type { GcmTerrainPreviewProps } from "@/ui/gcm/terrain/types"
+import { I18N } from "@/ui/i18n"
 
 export function TerrainPreview({
 	readTerrain,
@@ -38,20 +39,24 @@ export function TerrainPreview({
 				<div className="flex flex-wrap items-baseline justify-between gap-2">
 					<span className={uiTokens.type.valueSm}>{label}</span>
 					<span className={uiTokens.field.note}>
-						White is land; black is ocean.
+						{I18N.t("White is land; black is ocean.")}
 					</span>
 				</div>
 				<p className={uiTokens.field.note}>
-					Gray dashes: imported grid. Cyan: model grid, with dots at its poles.
+					{I18N.t(
+						"Gray dashes: imported grid. Cyan: model grid, with dots at its poles.",
+					)}
 				</p>
 				{starPoints.length > 0 && (
 					<p className={uiTokens.field.note}>
-						Amber sun: sub-stellar point. Dark dot: anti-stellar point.
+						{I18N.t(
+							"Amber sun: sub-stellar point. Dark dot: anti-stellar point.",
+						)}
 					</p>
 				)}
 				{zoneCircles.length > 0 && (
 					<p className={uiTokens.field.note}>
-						Orange dashes: tropics. Violet dashes: polar circles.
+						{I18N.t("Orange dashes: tropics. Violet dashes: polar circles.")}
 					</p>
 				)}
 			</figcaption>

@@ -12,6 +12,7 @@ import { GCM_FIELD_MAP } from "@/ui/gcm/field-map"
 import { GCM_MAP_NAVIGATION } from "@/ui/gcm/map-navigation"
 import type { GcmMapNavigation } from "@/ui/gcm/map-navigation/types"
 import type { GcmMapProps } from "@/ui/gcm/types"
+import { I18N } from "@/ui/i18n"
 
 const CANVAS_WIDTH = 1440
 const CANVAS_HEIGHT = 720
@@ -45,7 +46,7 @@ export function GcmMap({
 		try {
 			await GCM_DOWNLOAD.png(canvas.current)
 		} catch {
-			setExportError("Unable to export map. Please try again.")
+			setExportError(I18N.t("Unable to export map. Please try again."))
 		} finally {
 			setExporting(false)
 		}
@@ -115,8 +116,8 @@ export function GcmMap({
 						tone="overlay"
 						size="sm"
 						shape="rounded"
-						aria-label="Zoom in"
-						title="Zoom in"
+						aria-label={I18N.t("Zoom in")}
+						title={I18N.t("Zoom in")}
 						onClick={() => navigation.current?.zoomIn()}
 					>
 						<PlusIcon className="h-4 w-4" />
@@ -125,8 +126,8 @@ export function GcmMap({
 						tone="overlay"
 						size="sm"
 						shape="rounded"
-						aria-label="Zoom out"
-						title="Zoom out"
+						aria-label={I18N.t("Zoom out")}
+						title={I18N.t("Zoom out")}
 						onClick={() => navigation.current?.zoomOut()}
 					>
 						<MinusIcon className="h-4 w-4" />
@@ -135,8 +136,8 @@ export function GcmMap({
 						tone="overlay"
 						size="sm"
 						shape="rounded"
-						title="Reset map view"
-						aria-label="Reset map view"
+						title={I18N.t("Reset map view")}
+						aria-label={I18N.t("Reset map view")}
 						onClick={() => navigation.current?.reset()}
 					>
 						<RefreshIcon className="h-4 w-4" />
@@ -146,8 +147,8 @@ export function GcmMap({
 							tone="overlay"
 							size="sm"
 							shape="rounded"
-							title="Export map as PNG"
-							aria-label="Export map as PNG"
+							title={I18N.t("Export map as PNG")}
+							aria-label={I18N.t("Export map as PNG")}
 							aria-busy={exporting}
 							disabled={exporting}
 							onClick={exportPng}
@@ -173,7 +174,7 @@ export function GcmMap({
 			{loading && (
 				<div
 					role="status"
-					aria-label="Loading climate map"
+					aria-label={I18N.t("Loading climate map")}
 					className="absolute inset-0 p-4"
 				>
 					<div
@@ -203,7 +204,7 @@ export function GcmMap({
 								uiTokens.surface.panel,
 							)}
 						>
-							Preparing climate map…
+							{I18N.t("Preparing climate map…")}
 						</span>
 					</div>
 				</div>

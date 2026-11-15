@@ -1,6 +1,7 @@
 import { cx } from "@/ui/components/lib"
 import type { GcmSpectralStripProps } from "@/ui/gcm/system/types"
 import { rgbToCss } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 export function SpectralStrip({
 	swatches,
@@ -10,7 +11,9 @@ export function SpectralStrip({
 		<div
 			className="flex items-end gap-1"
 			role="img"
-			aria-label={`Spectral classes, current class ${activeLetter}`}
+			aria-label={I18N.t("Spectral classes, current class {letter}", {
+				letter: activeLetter,
+			})}
 		>
 			{swatches.map((swatch) => {
 				const active = swatch.letter === activeLetter

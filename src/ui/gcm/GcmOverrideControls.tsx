@@ -6,6 +6,7 @@ import {
 	formatPrecipitation,
 	formatWithUnit,
 } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const SURFACE_OVERRIDES: ReadonlyArray<GcmOverrideSpec> = [
 	...[
@@ -85,7 +86,7 @@ export function GcmOverrideControls({
 			return (
 				<div key={key} className="space-y-1">
 					<ToggleRow
-						label={`${label} override`}
+						label={I18N.t("{label} override", { label: I18N.t(label) })}
 						help={GCM_INPUT_HELP[key]}
 						checked={value !== null}
 						disabled={disabled}
@@ -93,7 +94,7 @@ export function GcmOverrideControls({
 					/>
 					{value !== null && (
 						<LabeledSlider
-							label={label}
+							label={I18N.t(label)}
 							help={GCM_INPUT_HELP[key]}
 							value={
 								spec.unit === "water"

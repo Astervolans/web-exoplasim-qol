@@ -1,6 +1,7 @@
 import type { GcmHelpKey } from "@/ui/gcm/types"
+import { I18N } from "@/ui/i18n"
 
-export const GCM_INPUT_HELP: Record<GcmHelpKey, string> = {
+const ENGLISH: Record<GcmHelpKey, string> = {
 	layers:
 		"How many layers the atmosphere is split into from the ground up. ExoPlaSim's default is 10. Using 5 is faster but coarser, and can change clouds, winds and radiation. The layers follow the terrain rather than sitting at fixed altitudes. Changing this starts a new model; saved runs keep the layer count they were made with.",
 	periapseLongitudeDeg:
@@ -106,3 +107,10 @@ export const GCM_INPUT_HELP: Record<GcmHelpKey, string> = {
 	showZoneCircles:
 		"Draws the tropics at ±obliquity and the polar circles at ±(90° − obliquity) in model coordinates, on the main map and in the terrain import preview. Orange dashes are the tropics; violet dashes are the polar circles. With obliquity above 45° the polar circles lie closer to the equator than the tropics, so the two pairs swap order while staying at their geometric latitudes. Only available with tidally locked illumination off.",
 }
+
+export const GCM_INPUT_HELP = new Proxy(ENGLISH, {
+	get: (target, key) =>
+		typeof key === "string" && Object.hasOwn(target, key)
+			? I18N.t(target[key as GcmHelpKey])
+			: Reflect.get(target, key),
+})

@@ -1,6 +1,7 @@
 import type { GcmModeGroup } from "@/ui/gcm/types"
+import { I18N } from "@/ui/i18n"
 
-export const GCM_MODE_GROUPS: ReadonlyArray<GcmModeGroup> = [
+const GROUPS: ReadonlyArray<GcmModeGroup> = [
 	{
 		label: "Elevation",
 		defaultView: "elevation",
@@ -130,3 +131,16 @@ export const GCM_MODE_GROUPS: ReadonlyArray<GcmModeGroup> = [
 		],
 	},
 ]
+
+function groups(): ReadonlyArray<GcmModeGroup> {
+	return GROUPS.map((group) => ({
+		...group,
+		label: I18N.t(group.label),
+		children: group.children.map((child) => ({
+			...child,
+			label: I18N.t(child.label),
+		})),
+	}))
+}
+
+export const GCM_MODE_GROUPS = { groups }

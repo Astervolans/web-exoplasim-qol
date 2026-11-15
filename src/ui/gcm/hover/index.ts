@@ -10,13 +10,17 @@ import type {
 } from "@/ui/gcm/hover/types"
 import { COORDINATES } from "@/ui/genesis/shared/coordinates"
 import { rgbToCss } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 function rows({ point, layer, unitSystem }: GcmHoverRequest): GcmHoverRow[] {
 	const [latitude, longitude] = COORDINATES.format(point)
 	const value = GCM_FIELD_SAMPLE.value({ layer, point })
 	const field =
 		layer.kind === "terrain"
-			? { label: "Elevation", value: `${Math.round(value).toLocaleString()} m` }
+			? {
+					label: I18N.t("Elevation"),
+					value: `${Math.round(value).toLocaleString()} m`,
+				}
 			: layer.kind === "field" || layer.kind === "downscaled-field"
 				? {
 						label: GCM_FIELDS.definition(layer.mode).label,
@@ -28,11 +32,11 @@ function rows({ point, layer, unitSystem }: GcmHoverRequest): GcmHoverRow[] {
 					}
 	return [
 		{
-			label: "Lat",
+			label: I18N.t("Lat"),
 			value: latitude,
 		},
 		{
-			label: "Lon",
+			label: I18N.t("Lon"),
 			value: longitude,
 		},
 		field,
@@ -53,7 +57,7 @@ function monthly({
 			value,
 			unitSystem,
 		})
-		if (formatted === "Unavailable") return []
+		if (formatted === I18N.t("Unavailable")) return []
 		return [
 			{
 				month,

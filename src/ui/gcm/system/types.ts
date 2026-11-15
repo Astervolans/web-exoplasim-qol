@@ -1,5 +1,8 @@
 import type { ReactNode } from "react"
-import type { AtmosphereProfile } from "@/model/celestial/atmosphere/types"
+import type {
+	AtmosphereProfile,
+	AtmosphereRegime,
+} from "@/model/celestial/atmosphere/types"
 import type { OrbitZones } from "@/model/celestial/orbit/types"
 import type { PlanetLayer } from "@/model/celestial/planet/types"
 import type { StarSpectralSwatch } from "@/model/celestial/star/types"
@@ -96,6 +99,6 @@ export interface GcmAtmosphereColumnProps {
 	surfaceTemperatureK: number
 	surfacePressureBar: number
 	scaleHeightKm: number
-	regimeLabel: string
+	regime: AtmosphereRegime
 	maxElevationKm: number
 }

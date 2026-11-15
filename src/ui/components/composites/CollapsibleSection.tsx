@@ -1,5 +1,6 @@
 import React, { useId, useState } from "react"
 import { uiTokens } from "@/ui/components/tokens"
+import { I18N } from "@/ui/i18n"
 
 interface CollapsibleSectionProps {
 	title: string
@@ -42,9 +43,9 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 					{modified && (
 						<span
 							className={uiTokens.section.marker}
-							title="Changed from the Earth defaults"
+							title={I18N.t("Changed from the Earth defaults")}
 							role="img"
-							aria-label="modified"
+							aria-label={I18N.t("modified")}
 						/>
 					)}
 				</button>
@@ -52,10 +53,12 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 					type="button"
 					className={uiTokens.section.action}
 					disabled={!modified || resetDisabled}
-					title={`Reset ${title.toLowerCase()} to the Earth defaults`}
+					title={I18N.t("Reset {section} to the Earth defaults", {
+						section: title.toLowerCase(),
+					})}
 					onClick={onReset}
 				>
-					Reset
+					{I18N.t("Reset")}
 				</button>
 			</div>
 			<div id={id} hidden={!open} className={uiTokens.section.body}>

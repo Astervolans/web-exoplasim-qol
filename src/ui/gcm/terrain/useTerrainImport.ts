@@ -8,6 +8,7 @@ import type {
 import { GCM_TERRAIN_ORIENTATION } from "@/model/climate/gcm/terrain/orientation"
 import type { GcmTerrainOrientation } from "@/model/climate/gcm/terrain/orientation/types"
 import type { GcmTerrainUpload } from "@/ui/gcm/terrain/types"
+import { I18N } from "@/ui/i18n"
 
 export function useTerrainImport() {
 	const [heightmap, setHeightmap] = useState<GcmTerrainImage | null>(null)
@@ -69,14 +70,14 @@ export function useTerrainImport() {
 		else setMask(null)
 		try {
 			if (file.size > GCM_TERRAIN_IMPORT.MAX_FILE_BYTES)
-				throw new Error("Terrain files must be smaller than 64 MiB")
+				throw new Error(I18N.t("Terrain files must be smaller than 64 MiB"))
 			const image = GCM_TERRAIN_IMPORT.read({
 				name: file.name,
 				buffer: await file.arrayBuffer(),
 			})
 			if (version !== versions.current[kind]) return
 			if (kind === "mask" && image.encoding !== "normalized")
-				throw new Error("Choose a PNG land mask")
+				throw new Error(I18N.t("Choose a PNG land mask"))
 			if (kind === "heightmap") setHeightmap(image)
 			else setMask(image)
 		} catch (error) {

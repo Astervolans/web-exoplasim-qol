@@ -1,6 +1,7 @@
 import { useId } from "react"
 import { uiPalette } from "@/ui/components/tokens"
 import type { GcmOrbitDiagramProps } from "@/ui/gcm/system/types"
+import { I18N } from "@/ui/i18n"
 
 const CENTER = { x: 160, y: 92 } as const
 const MAX_RADIUS = 60
@@ -69,9 +70,9 @@ export function OrbitDiagram({
 			viewBox="0 0 320 236"
 			className="h-auto w-full"
 			role="img"
-			aria-label="Orbit seen from above the ecliptic plane"
+			aria-label={I18N.t("Orbit seen from above the ecliptic plane")}
 		>
-			<title>Orbit seen from above the ecliptic plane</title>
+			<title>{I18N.t("Orbit seen from above the ecliptic plane")}</title>
 			<defs>
 				<clipPath id={clip}>
 					<rect
@@ -83,7 +84,7 @@ export function OrbitDiagram({
 				</clipPath>
 			</defs>
 			<text x={8} y={14} className="fill-slate-700 text-[9px] font-semibold">
-				orbit // from above the ecliptic
+				{I18N.t("orbit // from above the ecliptic")}
 			</text>
 			<text x={8} y={22} className="fill-slate-500 text-[9px]">
 				a = {au(semiMajorAxisAu)} · e = {e.toFixed(3)} · P ={" "}
@@ -144,7 +145,7 @@ export function OrbitDiagram({
 				textAnchor="middle"
 				className="fill-slate-500 text-[9px]"
 			>
-				star
+				{I18N.t("star")}
 			</text>
 			{e > 0.02 && (
 				<g stroke={uiPalette.celestial.orbitFocus} strokeWidth={1}>
@@ -182,7 +183,7 @@ export function OrbitDiagram({
 				textAnchor="middle"
 				className="fill-slate-600 text-[9px]"
 			>
-				planet
+				{I18N.t("planet")}
 			</text>
 			<text
 				x={perihelionX}
@@ -190,7 +191,9 @@ export function OrbitDiagram({
 				textAnchor="middle"
 				className="fill-slate-400 text-[8px]"
 			>
-				perihelion {au(semiMajorAxisAu * (1 - e))}
+				{I18N.t("perihelion {distance}", {
+					distance: au(semiMajorAxisAu * (1 - e)),
+				})}
 			</text>
 			<text
 				x={aphelionX}
@@ -198,18 +201,24 @@ export function OrbitDiagram({
 				textAnchor="middle"
 				className="fill-slate-400 text-[8px]"
 			>
-				aphelion {au(semiMajorAxisAu * (1 + e))}
+				{I18N.t("aphelion {distance}", {
+					distance: au(semiMajorAxisAu * (1 + e)),
+				})}
 			</text>
 			<text x={8} y={182} className="fill-slate-700 text-[9px] font-semibold">
-				distance from the star
+				{I18N.t("distance from the star")}
 			</text>
 			<text x={8} y={194} className="text-[8px]">
 				<tspan fill={uiPalette.celestial.habitableZone}>
-					shaded = habitable zone {zones.habitableInnerAu.toFixed(2)}–
-					{zones.habitableOuterAu.toFixed(2)} AU
+					{I18N.t("shaded = habitable zone {inner}–{outer} AU", {
+						inner: zones.habitableInnerAu.toFixed(2),
+						outer: zones.habitableOuterAu.toFixed(2),
+					})}
 				</tspan>
 				<tspan fill={uiPalette.celestial.snowLine}>
-					· dashed = snow line {zones.snowLineAu.toFixed(2)} AU
+					{I18N.t("· dashed = snow line {distance} AU", {
+						distance: zones.snowLineAu.toFixed(2),
+					})}
 				</tspan>
 			</text>
 			<rect

@@ -12,6 +12,7 @@ import { SystemSlider } from "@/ui/gcm/system/SystemSlider"
 import type { GcmSystemPanelProps } from "@/ui/gcm/system/types"
 import { GCM_SYSTEM_VIEW } from "@/ui/gcm/system/view"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const NATIVE_PERIAPSE_DEG = 102.7
 const ROTATION_DAYS = GCM_SYSTEM.rotationDaysRange
@@ -43,7 +44,7 @@ export function OrbitPanel({
 				starColor={uiPalette.celestial.star}
 			/>
 			<SystemSlider
-				label="Year length"
+				label={I18N.t("Year length")}
 				help={GCM_INPUT_HELP.yearDays}
 				value={config.yearDays}
 				display={formatWithUnit(config.yearDays, "days", 0)}
@@ -59,7 +60,7 @@ export function OrbitPanel({
 				}
 			/>
 			<SystemSlider
-				label="Eccentricity"
+				label={I18N.t("Eccentricity")}
 				help={GCM_INPUT_HELP.eccentricity}
 				value={config.eccentricity}
 				display={formatWithUnit(config.eccentricity, "", 3)}
@@ -71,7 +72,7 @@ export function OrbitPanel({
 				onChange={(eccentricity) => onChange({ ...config, eccentricity })}
 			/>
 			<SystemSlider
-				label="Longitude of periapsis"
+				label={I18N.t("Longitude of periapsis")}
 				help={GCM_INPUT_HELP.periapseLongitudeDeg}
 				value={config.periapseLongitudeDeg ?? NATIVE_PERIAPSE_DEG}
 				display={formatWithUnit(
@@ -90,11 +91,17 @@ export function OrbitPanel({
 			/>
 			<div className="space-y-1">
 				<span className={label}>
-					<InputLabel label="Rotation" help={GCM_INPUT_HELP.synchronous} />
+					<InputLabel
+						label={I18N.t("Rotation")}
+						help={GCM_INPUT_HELP.synchronous}
+					/>
 				</span>
 				<SegmentedControl
 					fullWidth
-					options={ROTATION_OPTIONS}
+					options={ROTATION_OPTIONS.map((option) => ({
+						...option,
+						label: I18N.t(option.label),
+					}))}
 					value={config.synchronous ? "locked" : "free"}
 					onChange={(mode) => {
 						if (structural) return
@@ -114,7 +121,7 @@ export function OrbitPanel({
 				</p>
 			</div>
 			<SystemSlider
-				label="Rotation period"
+				label={I18N.t("Rotation period")}
 				help={GCM_INPUT_HELP.rotationPeriodDays}
 				value={config.rotationPeriodDays}
 				display={formatWithUnit(config.rotationPeriodDays, "days", 2)}
@@ -129,7 +136,7 @@ export function OrbitPanel({
 			/>
 			{config.synchronous && (
 				<LabeledSlider
-					label="Substellar longitude"
+					label={I18N.t("Substellar longitude")}
 					help={GCM_INPUT_HELP.substellarLongitudeDeg}
 					value={formatWithUnit(config.substellarLongitudeDeg, "°E", 0)}
 					numericValue={config.substellarLongitudeDeg}
@@ -153,10 +160,12 @@ export function OrbitPanel({
 				))}
 			</div>
 			<details className="space-y-2">
-				<summary className={uiTokens.field.disclosure}>Advanced orbit</summary>
+				<summary className={uiTokens.field.disclosure}>
+					{I18N.t("Advanced orbit")}
+				</summary>
 				<div className="space-y-2 pt-2">
 					<ToggleRow
-						label="Generic Keplerian orbit"
+						label={I18N.t("Generic Keplerian orbit")}
 						help={GCM_INPUT_HELP.keplerian}
 						checked={config.keplerian}
 						disabled={structural}
@@ -170,7 +179,7 @@ export function OrbitPanel({
 						onChange={onChange}
 					/>
 					<ToggleRow
-						label="Fixed orbit"
+						label={I18N.t("Fixed orbit")}
 						help={GCM_INPUT_HELP.fixedOrbit}
 						checked={config.fixedOrbit}
 						disabled={disabled}
@@ -179,13 +188,9 @@ export function OrbitPanel({
 				</div>
 			</details>
 			<p className={uiTokens.field.note}>
-				Semi-major axis, insolation and the habitable zone follow from the
-				stellar luminosity and Kepler's third law. The model's own orbital
-				illumination uses the year length and eccentricity set here. The zone
-				edges and both temperature rows are estimates: the band is flux-scaled,
-				the equilibrium temperature assumes a 0.3 albedo and no greenhouse
-				warming, and the surface temperature adds the atmosphere's greenhouse
-				fit.
+				{I18N.t(
+					"Semi-major axis, insolation and the habitable zone follow from the stellar luminosity and Kepler's third law. The model's own orbital illumination uses the year length and eccentricity set here. The zone edges and both temperature rows are estimates: the band is flux-scaled, the equilibrium temperature assumes a 0.3 albedo and no greenhouse warming, and the surface temperature adds the atmosphere's greenhouse fit.",
+				)}
 			</p>
 		</div>
 	)

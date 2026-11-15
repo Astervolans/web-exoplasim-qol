@@ -6,6 +6,7 @@ import { GcmAtmosphereControls } from "@/ui/gcm/GcmAtmosphereControls"
 import { AtmosphereColumn } from "@/ui/gcm/system/AtmosphereColumn"
 import type { GcmAtmospherePanelProps } from "@/ui/gcm/system/types"
 import { GCM_SYSTEM_VIEW } from "@/ui/gcm/system/view"
+import { I18N } from "@/ui/i18n"
 
 const VISIBLE_SHARE = 0.005
 
@@ -36,7 +37,7 @@ export function AtmospherePanel({
 				surfaceTemperatureK={atmosphere.surfaceTemperatureK}
 				surfacePressureBar={atmosphere.pressureBar}
 				scaleHeightKm={atmosphere.scaleHeightKm}
-				regimeLabel={CELESTIAL_ATMOSPHERE.REGIME_LABELS[atmosphere.regime]}
+				regime={atmosphere.regime}
 				maxElevationKm={maxElevationKm}
 			/>
 			<div className="space-y-1">
@@ -81,11 +82,9 @@ export function AtmospherePanel({
 				onChange={(next) => onChange({ ...config, atmosphere: next })}
 			/>
 			<p className={uiTokens.field.note}>
-				Profile, greenhouse and atmospheric height are zero-dimensional
-				estimates at a wet surface; the map's energy-flow view shows the model's
-				own global-mean fluxes instead. ExoPlaSim's radiation responds only to
-				CO₂, water vapour and ozone, so the gas mix changes the bulk air
-				properties rather than adding absorption.
+				{I18N.t(
+					"Profile, greenhouse and atmospheric height are zero-dimensional estimates at a wet surface; the map's energy-flow view shows the model's own global-mean fluxes instead. ExoPlaSim's radiation responds only to CO₂, water vapour and ozone, so the gas mix changes the bulk air properties rather than adding absorption.",
+				)}
 			</p>
 		</div>
 	)

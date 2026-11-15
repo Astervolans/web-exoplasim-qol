@@ -35,6 +35,7 @@ import type {
 	GcmSmoothingFilter,
 } from "@/ui/gcm/types"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const BYTES_PER_MEGABYTE = 1_000_000
 const SOIL_DEPTH_SLIDER: GcmSliderSpec = {
@@ -144,7 +145,7 @@ export function GcmConfigPanel({
 	const renderSlider = (spec: GcmSliderSpec) => (
 		<LabeledSlider
 			key={spec.key}
-			label={spec.label}
+			label={I18N.t(spec.label)}
 			help={GCM_INPUT_HELP[spec.key]}
 			value={formatWithUnit(config[spec.key], spec.unit, spec.digits)}
 			numericValue={config[spec.key]}
@@ -171,7 +172,7 @@ export function GcmConfigPanel({
 	const overlayControls = config.synchronous ? (
 		<>
 			<ToggleRow
-				label="Show sub-stellar and anti-stellar points"
+				label={I18N.t("Show sub-stellar and anti-stellar points")}
 				help={GCM_INPUT_HELP.showStarPoints}
 				checked={showStarPoints}
 				onChange={onShowStarPointsChange}
@@ -180,11 +181,11 @@ export function GcmConfigPanel({
 				<div className={overlayLegend}>
 					<span className="inline-flex items-center gap-1">
 						<Swatch color={uiPalette.starPoint.substellar} shape="round" />
-						Sub-stellar
+						{I18N.t("Sub-stellar")}
 					</span>
 					<span className="inline-flex items-center gap-1">
 						<Swatch color={uiPalette.starPoint.antistellar} shape="round" />
-						Anti-stellar
+						{I18N.t("Anti-stellar")}
 					</span>
 				</div>
 			)}
@@ -192,7 +193,7 @@ export function GcmConfigPanel({
 	) : (
 		<>
 			<ToggleRow
-				label="Show tropics and polar circles"
+				label={I18N.t("Show tropics and polar circles")}
 				help={GCM_INPUT_HELP.showZoneCircles}
 				checked={showZoneCircles}
 				onChange={onShowZoneCirclesChange}
@@ -201,11 +202,11 @@ export function GcmConfigPanel({
 				<div className={overlayLegend}>
 					<span className="inline-flex items-center gap-1">
 						<Swatch color={uiPalette.zoneCircle.tropic} shape="round" />
-						Tropics
+						{I18N.t("Tropics")}
 					</span>
 					<span className="inline-flex items-center gap-1">
 						<Swatch color={uiPalette.zoneCircle.polar} shape="round" />
-						Polar circles
+						{I18N.t("Polar circles")}
 					</span>
 				</div>
 			)}
@@ -215,7 +216,7 @@ export function GcmConfigPanel({
 		model: (
 			<>
 				<div className="space-y-1">
-					<span className={label}>Engine</span>
+					<span className={label}>{I18N.t("Engine")}</span>
 					<SegmentedControl
 						fullWidth
 						options={[
@@ -225,13 +226,17 @@ export function GcmConfigPanel({
 								disabled: gpuAvailable === false,
 								title:
 									gpuAvailable === false
-										? "This browser has no WebGPU"
-										: "The WebGPU port of ExoPlaSim, on the graphics card",
+										? I18N.t("This browser has no WebGPU")
+										: I18N.t(
+												"The WebGPU port of ExoPlaSim, on the graphics card",
+											),
 							},
 							{
 								value: "cpu",
 								label: "CPU",
-								title: "ExoPlaSim compiled to WebAssembly, on CPU workers",
+								title: I18N.t(
+									"ExoPlaSim compiled to WebAssembly, on CPU workers",
+								),
 							},
 						]}
 						value={engine}
@@ -243,7 +248,10 @@ export function GcmConfigPanel({
 				{resolutions.length > 0 && (
 					<div className="space-y-1">
 						<span className={label}>
-							<InputLabel label="Resolution" help={GCM_INPUT_HELP.truncation} />
+							<InputLabel
+								label={I18N.t("Resolution")}
+								help={GCM_INPUT_HELP.truncation}
+							/>
 						</span>
 						<SegmentedControl
 							fullWidth
@@ -263,7 +271,9 @@ export function GcmConfigPanel({
 										disabled: !assets,
 										title: assets
 											? undefined
-											: `Not built for the ${engine.toUpperCase()} engine`,
+											: I18N.t("Not built for the {engine} engine", {
+													engine: engine.toUpperCase(),
+												}),
 									}
 								})}
 							value={String(config.truncation)}
@@ -273,18 +283,21 @@ export function GcmConfigPanel({
 						/>
 					</div>
 				)}
-				<fieldset className="space-y-1" aria-label="Atmospheric layers">
+				<fieldset
+					className="space-y-1"
+					aria-label={I18N.t("Atmospheric layers")}
+				>
 					<legend className={label}>
 						<InputLabel
-							label="Atmospheric layers"
+							label={I18N.t("Atmospheric layers")}
 							help={GCM_INPUT_HELP.layers}
 						/>
 					</legend>
 					<SegmentedControl
 						fullWidth
 						options={[
-							{ value: "5", label: "5 layers" },
-							{ value: "10", label: "10 layers" },
+							{ value: "5", label: I18N.t("{count} layers", { count: 5 }) },
+							{ value: "10", label: I18N.t("{count} layers", { count: 10 }) },
 						]}
 						value={String(config.layers)}
 						onChange={(value) =>
@@ -293,13 +306,19 @@ export function GcmConfigPanel({
 					/>
 				</fieldset>
 				{engine !== "gpu" && (
-					<fieldset className="space-y-1" aria-label="Workers">
+					<fieldset className="space-y-1" aria-label={I18N.t("Workers")}>
 						<legend className={label}>
-							<InputLabel label="Workers" help={GCM_INPUT_HELP.workers} />
+							<InputLabel
+								label={I18N.t("Workers")}
+								help={GCM_INPUT_HELP.workers}
+							/>
 						</legend>
 						<SegmentedControl
 							fullWidth
-							options={workerOptions}
+							options={workerOptions.map((option) => ({
+								...option,
+								label: I18N.t(option.label),
+							}))}
 							value={workerChoice}
 							onChange={onWorkerChange}
 						/>
@@ -308,7 +327,7 @@ export function GcmConfigPanel({
 				<div className="space-y-1">
 					<span className={label}>
 						<InputLabel
-							label="Timestep (minutes)"
+							label={I18N.t("Timestep (minutes)")}
 							help={GCM_INPUT_HELP.timestepMinutes}
 						/>
 					</span>
@@ -326,13 +345,16 @@ export function GcmConfigPanel({
 				<div className="space-y-1">
 					<span className={label}>
 						<InputLabel
-							label="Spectral filter"
+							label={I18N.t("Spectral filter")}
 							help={GCM_INPUT_HELP.physicsFilter}
 						/>
 					</span>
 					<SegmentedControl
 						fullWidth
-						options={SMOOTHING_OPTIONS}
+						options={SMOOTHING_OPTIONS.map((option) => ({
+							...option,
+							label: I18N.t(option.label),
+						}))}
 						value={smoothing}
 						onChange={(value) =>
 							update({
@@ -347,21 +369,21 @@ export function GcmConfigPanel({
 					/>
 				</div>
 				<ToggleRow
-					label="Filter gridpoint tendencies"
+					label={I18N.t("Filter gridpoint tendencies")}
 					help={GCM_INPUT_HELP.gridpointFilter}
 					checked={config.physicsFilter.includes("gp")}
 					disabled={disabled}
 					onChange={(enabled) => toggleFilter({ filter: "gp", enabled })}
 				/>
 				<ToggleRow
-					label="Filter spectral tendencies"
+					label={I18N.t("Filter spectral tendencies")}
 					help={GCM_INPUT_HELP.spectralFilter}
 					checked={config.physicsFilter.includes("sp")}
 					disabled={disabled}
 					onChange={(enabled) => toggleFilter({ filter: "sp", enabled })}
 				/>
 				<ToggleRow
-					label="Storm climatology"
+					label={I18N.t("Storm climatology")}
 					help={GCM_INPUT_HELP.stormclim}
 					checked={config.stormclim}
 					disabled={disabled}
@@ -394,11 +416,17 @@ export function GcmConfigPanel({
 				{renderSlider(OCEAN_DEPTH_SLIDER)}
 				<fieldset disabled={disabled || locked} className="space-y-1">
 					<span className={label}>
-						<InputLabel label="Vegetation" help={GCM_INPUT_HELP.vegetation} />
+						<InputLabel
+							label={I18N.t("Vegetation")}
+							help={GCM_INPUT_HELP.vegetation}
+						/>
 					</span>
 					<SegmentedControl
 						fullWidth
-						options={VEGETATION_OPTIONS}
+						options={VEGETATION_OPTIONS.map((option) => ({
+							...option,
+							label: I18N.t(option.label),
+						}))}
 						value={
 							String(
 								config.vegetation,
@@ -410,7 +438,7 @@ export function GcmConfigPanel({
 					/>
 				</fieldset>
 				<ToggleRow
-					label="Glaciers"
+					label={I18N.t("Glaciers")}
 					help={GCM_INPUT_HELP.glaciers}
 					checked={config.glaciers.enabled}
 					disabled={disabled || locked}
@@ -421,7 +449,7 @@ export function GcmConfigPanel({
 				{config.vegetation > 0 && renderSlider(GROWTH_SLIDER)}
 				{renderSlider(SOIL_DEPTH_SLIDER)}
 				<ToggleRow
-					label="Wet soil"
+					label={I18N.t("Wet soil")}
 					help={GCM_INPUT_HELP.wetSoil}
 					checked={config.wetSoil}
 					disabled={disabled}
@@ -439,13 +467,15 @@ export function GcmConfigPanel({
 					options={[
 						{
 							value: "standard",
-							label: "Standard",
-							title: "Illustrated star, orbit, planet and atmosphere panels",
+							label: I18N.t("Standard"),
+							title: I18N.t(
+								"Illustrated star, orbit, planet and atmosphere panels",
+							),
 						},
 						{
 							value: "advanced",
-							label: "Advanced",
-							title: "Direct control of every value ExoPlaSim receives",
+							label: I18N.t("Advanced"),
+							title: I18N.t("Direct control of every value ExoPlaSim receives"),
 						},
 					]}
 					value={mode}
@@ -453,14 +483,18 @@ export function GcmConfigPanel({
 				/>
 				<p className={uiTokens.field.note}>
 					{mode === "standard"
-						? "Illustrated panels: stellar, orbital and interior values are derived, and the habitable zone and atmosphere readouts are estimates."
-						: "Direct inputs: the values ExoPlaSim actually receives, without the derivations."}
+						? I18N.t(
+								"Illustrated panels: stellar, orbital and interior values are derived, and the habitable zone and atmosphere readouts are estimates.",
+							)
+						: I18N.t(
+								"Direct inputs: the values ExoPlaSim actually receives, without the derivations.",
+							)}
 				</p>
 			</div>
 			{SECTIONS.map(({ section, title, defaultOpen }) => (
 				<CollapsibleSection
 					key={section}
-					title={title}
+					title={I18N.t(title)}
 					defaultOpen={defaultOpen}
 					modified={GCM_SETTINGS_SECTIONS.modified({ config, section, mode })}
 					resetDisabled={

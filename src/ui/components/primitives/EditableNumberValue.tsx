@@ -1,6 +1,7 @@
 import { useState } from "react"
 import type { EditableNumberValueProps } from "@/ui/components/primitives/number-input/types"
 import { uiTokens } from "@/ui/components/tokens"
+import { I18N } from "@/ui/i18n"
 
 export function EditableNumberValue({
 	label,
@@ -28,8 +29,8 @@ export function EditableNumberValue({
 		<button
 			type="button"
 			disabled={disabled}
-			title={`Type an exact value (${min} to ${max})`}
-			aria-label={`Edit ${label}`}
+			title={I18N.t("Type an exact value ({min} to {max})", { min, max })}
+			aria-label={I18N.t("Edit {label}", { label })}
 			className={`${valueClassName} ${disabled ? "" : uiTokens.field.valueEditable}`}
 			onClick={() => setDraft(String(numericValue))}
 		>

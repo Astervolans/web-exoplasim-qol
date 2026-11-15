@@ -11,6 +11,7 @@ import { GCM_SYSTEM_VIEW } from "@/ui/gcm/system/view"
 import { TerrainPanel } from "@/ui/gcm/terrain/TerrainPanel"
 import type { GcmAdvancedPanelProps } from "@/ui/gcm/types"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 type GcmNumericKey = Extract<
 	keyof GcmConfig,
@@ -136,7 +137,7 @@ export function GcmAdvancedPanel({
 		return (
 			<LabeledSlider
 				key={configKey}
-				label={spec.label}
+				label={I18N.t(spec.label)}
 				value={formatWithUnit(config[configKey], spec.unit, spec.digits)}
 				numericValue={config[configKey]}
 				min={spec.min}
@@ -164,8 +165,8 @@ export function GcmAdvancedPanel({
 				<SegmentedControl
 					fullWidth
 					options={[
-						{ value: "free", label: "Free rotation" },
-						{ value: "locked", label: "Tidally locked" },
+						{ value: "free", label: I18N.t("Free rotation") },
+						{ value: "locked", label: I18N.t("Tidally locked") },
 					]}
 					value={config.synchronous ? "locked" : "free"}
 					onChange={(mode) => {
@@ -187,11 +188,11 @@ export function GcmAdvancedPanel({
 				{config.synchronous && slider("substellar", "substellarLongitudeDeg")}
 				<details className="space-y-2">
 					<summary className={uiTokens.field.disclosure}>
-						Advanced orbit
+						{I18N.t("Advanced orbit")}
 					</summary>
 					<div className="space-y-2 pt-2">
 						<ToggleRow
-							label="Generic Keplerian orbit"
+							label={I18N.t("Generic Keplerian orbit")}
 							checked={config.keplerian}
 							disabled={isDisabled("keplerian")}
 							onChange={(keplerian) => update({ keplerian })}
@@ -204,7 +205,7 @@ export function GcmAdvancedPanel({
 							onChange={onChange}
 						/>
 						<ToggleRow
-							label="Fixed orbit"
+							label={I18N.t("Fixed orbit")}
 							checked={config.fixedOrbit}
 							disabled={isDisabled("fixedOrbit")}
 							onChange={(fixedOrbit) => update({ fixedOrbit })}

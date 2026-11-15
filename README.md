@@ -2,7 +2,22 @@
 
 Run the [ExoPlaSim](https://github.com/alphaparrot/ExoPlaSim) climate model in your browser, with live weather and climate maps. Explore Earth or imported terrain, change planetary conditions, and watch the atmosphere evolve.
 
-**[Try it in your browser](https://ryoung48.github.io/web-exoplasim/gcm/)**
+**English** · [中文](README.zh-CN.md)
+
+**About this repository.** This is a personal, self-use fork of [ryoung48/web-exoplasim](https://github.com/ryoung48/web-exoplasim), itself a browser port of ExoPlaSim. It is maintained for the author's own experiments, and the changes relative to the original project are mainly quality-of-life improvements rather than rework of the climate model itself. The original project's hosted demo is at [ryoung48.github.io/web-exoplasim/gcm](https://ryoung48.github.io/web-exoplasim/gcm/).
+
+## Changes in this fork
+
+Relative to [ryoung48/web-exoplasim](https://github.com/ryoung48/web-exoplasim):
+
+- **Illustrated planetary-system panels.** The Star, Orbit & rotation, Planet and Atmosphere settings are illustrated panels with Standard and Advanced modes, orbit, interior-cutaway, spectral-strip and atmospheric-profile diagrams, and readouts labelled as estimates.
+- **Chinese interface.** A language switch (EN / 中文) in the header; the first language follows the browser, and the choice is remembered.
+- **Terrain-import orientation.** Rotate an imported map so its poles and 0° meridian align with the model frame, with previews for the sub-stellar point and the tropics/polar circles.
+- **Star-point and climate-zone overlays** on the main map and the terrain-import preview.
+- **Tidal-locking guidance.** The Orbit panel estimates the tidal-locking timescale from the orbital parameters and recommends enabling or skipping **Tidally locked**.
+- **Year length down to 10 days** (previously 60) for short-period locked planets; enabling tidal locking disables the rotation-period slider, whose value then follows the year length.
+- **Temperature (K) and pressure (bar) ticks** on the atmospheric profile's horizontal axes.
+- **Estimate models rewritten from published relations** — Tout et al. (1996) stellar fits, constant-Q tidal friction (Goldreich & Soter 1966), grey-atmosphere balance, Earth energy-budget fractions — replacing the external reference implementation used earlier, so the panels no longer depend on that source.
 
 ## GPU and CPU engines
 

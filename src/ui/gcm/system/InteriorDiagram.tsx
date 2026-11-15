@@ -1,6 +1,7 @@
 import { useId } from "react"
 import { uiPalette } from "@/ui/components/tokens"
 import type { GcmInteriorDiagramProps } from "@/ui/gcm/system/types"
+import { I18N } from "@/ui/i18n"
 
 const CUTAWAY = { cx: 96, cy: 84, radius: 58 } as const
 const PARALLELS = [-60, -30, 0, 30, 60]
@@ -32,7 +33,10 @@ function arcPath({
 }
 
 export function InteriorDiagram(props: GcmInteriorDiagramProps) {
-	const footer = `Core ${Math.round(props.coreTemperatureK)} K · ${props.corePressureGPa.toFixed(0)} GPa · estimated`
+	const footer = I18N.t("Core {temperature} K · {pressure} GPa · estimated", {
+		temperature: Math.round(props.coreTemperatureK),
+		pressure: props.corePressureGPa.toFixed(0),
+	})
 	const clip = useId()
 	const tilt = Math.min(Math.max(props.obliquityDeg, 0), 90)
 	const tiltRadians = (tilt * Math.PI) / 180
@@ -47,9 +51,13 @@ export function InteriorDiagram(props: GcmInteriorDiagramProps) {
 			viewBox="0 0 320 168"
 			className="h-auto w-full"
 			role="img"
-			aria-label="Planet interior cutaway with its tilted rotation axis"
+			aria-label={I18N.t(
+				"Planet interior cutaway with its tilted rotation axis",
+			)}
 		>
-			<title>Planet interior cutaway with its tilted rotation axis</title>
+			<title>
+				{I18N.t("Planet interior cutaway with its tilted rotation axis")}
+			</title>
 			<defs>
 				<clipPath id={clip}>
 					<circle cx={CUTAWAY.cx} cy={CUTAWAY.cy} r={CUTAWAY.radius} />
@@ -141,7 +149,7 @@ export function InteriorDiagram(props: GcmInteriorDiagramProps) {
 				textAnchor="middle"
 				className="fill-slate-500 text-[9px]"
 			>
-				axial tilt {tilt.toFixed(1)}°
+				{I18N.t("axial tilt {degrees}°", { degrees: tilt.toFixed(1) })}
 			</text>
 			{props.layers.map((layer, index) => {
 				const outer = layer.outerRadius * CUTAWAY.radius
@@ -192,7 +200,8 @@ export function InteriorDiagram(props: GcmInteriorDiagramProps) {
 				const innerKm = Math.round(layer.innerRadius * props.radiusKm)
 				const outerKm = Math.round(layer.outerRadius * props.radiusKm)
 				const depth = `${innerKm.toLocaleString()}–${outerKm.toLocaleString()} km`
-				const label = `${index + 1} ${layer.name}${layer.phase === "solid" ? "" : ` (${layer.phase})`}`
+				const phase = layer.phase === "solid" ? "" : ` (${I18N.t(layer.phase)})`
+				const label = `${index + 1} ${I18N.t(layer.name)}${phase}`
 				return (
 					<g key={`key-${index}`}>
 						<rect

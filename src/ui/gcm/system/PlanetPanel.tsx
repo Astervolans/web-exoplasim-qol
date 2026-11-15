@@ -8,6 +8,7 @@ import type { GcmPlanetPanelProps } from "@/ui/gcm/system/types"
 import { GCM_SYSTEM_VIEW } from "@/ui/gcm/system/view"
 import { TerrainPanel } from "@/ui/gcm/terrain/TerrainPanel"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const MIN_MASS_EARTH = 0.05
 const MAX_MASS_EARTH = 10
@@ -39,7 +40,7 @@ export function PlanetPanel({
 				corePressureGPa={summary.interior.corePressureGPa}
 			/>
 			<SystemSlider
-				label="Planet mass"
+				label={I18N.t("Planet mass")}
 				help={GCM_INPUT_HELP.planetMassEarth}
 				value={massEarth}
 				display={formatWithUnit(massEarth, "M⊕", massEarth < 10 ? 2 : 1)}
@@ -59,7 +60,7 @@ export function PlanetPanel({
 				}
 			/>
 			<SystemSlider
-				label="Planet radius"
+				label={I18N.t("Planet radius")}
 				help={GCM_INPUT_HELP.radiusEarth}
 				value={config.radiusEarth}
 				display={formatWithUnit(config.radiusEarth, "R⊕", 2)}
@@ -79,7 +80,7 @@ export function PlanetPanel({
 				}
 			/>
 			<SystemSlider
-				label="Axial tilt"
+				label={I18N.t("Axial tilt")}
 				help={GCM_INPUT_HELP.obliquityDeg}
 				value={config.obliquityDeg}
 				display={formatWithUnit(config.obliquityDeg, "°", 1)}
@@ -101,10 +102,9 @@ export function PlanetPanel({
 				))}
 			</div>
 			<p className={uiTokens.field.note}>
-				Gravity follows from mass and radius; the model receives that value. The
-				globe shows the rotation axis at the chosen tilt. Interior structure,
-				core temperature and core pressure are estimates for a differentiated
-				rocky or icy body.
+				{I18N.t(
+					"Gravity follows from mass and radius; the model receives that value. The globe shows the rotation axis at the chosen tilt. Interior structure, core temperature and core pressure are estimates for a differentiated rocky or icy body.",
+				)}
 			</p>
 			<TerrainPanel
 				hasTerrain={hasTerrain}

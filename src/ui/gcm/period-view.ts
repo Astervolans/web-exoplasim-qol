@@ -5,20 +5,27 @@ import type {
 	GcmPeriodRequest,
 	GcmPeriodView,
 } from "@/ui/gcm/types"
+import { I18N } from "@/ui/i18n"
 
 const OCEAN_CLASS = 0
-const MONTH_FORMAT = new Intl.DateTimeFormat("en", { month: "short" })
+const MONTH_FORMATS = {
+	en: new Intl.DateTimeFormat("en", { month: "short" }),
+	zh: new Intl.DateTimeFormat("zh-CN", { month: "short" }),
+} as const
 
 function pad(value: number): string {
 	return String(value).padStart(2, "0")
 }
 
 function monthName(month: number): string {
-	return MONTH_FORMAT.format(new Date(2000, month - 1, 1))
+	return MONTH_FORMATS[I18N.language()].format(new Date(2000, month - 1, 1))
 }
 
 function instant(date: GcmDate): string {
-	return `Year ${date.year} · ${pad(date.month)}-${pad(date.day)} ${pad(date.hour)}:${pad(date.minute)}`
+	return I18N.t("Year {year} · {stamp}", {
+		year: date.year,
+		stamp: `${pad(date.month)}-${pad(date.day)} ${pad(date.hour)}:${pad(date.minute)}`,
+	})
 }
 
 function select({
@@ -31,7 +38,7 @@ function select({
 		return {
 			snapshot,
 			label: snapshot ? instant(snapshot.date) : "—",
-			emptyMessage: "Press Start to spin up the model",
+			emptyMessage: I18N.t("Press Start to spin up the model"),
 		}
 	}
 	if (period === "month") {
@@ -40,18 +47,32 @@ function select({
 		return {
 			snapshot: month?.snapshot ?? null,
 			label: month
-				? `${monthName(month.month)} mean · year ${month.year}`
+				? I18N.t("{month} mean · year {year}", {
+						month: monthName(month.month),
+						year: month.year,
+					})
 				: "—",
-			emptyMessage: "Monthly means appear when the first model month ends",
+			emptyMessage: I18N.t(
+				"Monthly means appear when the first model month ends",
+			),
 		}
 	}
 	const last = averages.months[averages.months.length - 1]
 	return {
 		snapshot: averages.annual,
 		label: last
-			? `12-month mean ending ${monthName(last.month)} · year ${last.year}`
+			? I18N.t("12-month mean ending {month} · year {year}", {
+					month: monthName(last.month),
+					year: last.year,
+				})
 			: "—",
-		emptyMessage: `Annual means need ${GCM_AVERAGES.MONTHS_PER_YEAR} model months (${averages.months.length} done)`,
+		emptyMessage: I18N.t(
+			"Annual means need {needed} model months ({done} done)",
+			{
+				needed: GCM_AVERAGES.MONTHS_PER_YEAR,
+				done: averages.months.length,
+			},
+		),
 	}
 }
 

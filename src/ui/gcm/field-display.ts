@@ -19,6 +19,7 @@ import {
 	formatTemperatureDelta,
 	formatWithUnit,
 } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const DAYS_PER_MONTH = 30
 
@@ -130,7 +131,7 @@ function format({ mode, value, unitSystem }: GcmFormattedValue): string {
 		value === -1 &&
 		["cape", "neutralBuoyancyPressure", "potentialIntensity"].includes(mode)
 	)
-		return "Unavailable"
+		return I18N.t("Unavailable")
 	switch (GCM_FIELDS.definition(mode).unit) {
 		case "gramsCarbonPerSquareMeterPerDay":
 			return formatWithUnit(value, "g C/m²/day", 2)
@@ -147,7 +148,9 @@ function format({ mode, value, unitSystem }: GcmFormattedValue): string {
 		case "metersPerSecond":
 			return formatSpeed(value, unitSystem)
 		case "millimetersPerDay":
-			return `${formatPrecipitation(value, unitSystem, 1)}/day`
+			return I18N.t("{amount}/day", {
+				amount: formatPrecipitation(value, unitSystem, 1),
+			})
 		case "millimeters":
 			return formatPrecipitation(value, unitSystem)
 		case "centimeters":

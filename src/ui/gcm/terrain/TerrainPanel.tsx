@@ -23,6 +23,8 @@ import { useTerrainImport } from "@/ui/gcm/terrain/useTerrainImport"
 
 import { formatWithUnit, KM_TO_FT } from "@/ui/genesis/shared/ui-format"
 
+import { I18N } from "@/ui/i18n"
+
 export function TerrainPanel({
 	hasTerrain,
 
@@ -51,14 +53,14 @@ export function TerrainPanel({
 					disabled={disabled}
 					onClick={() => dialog.current?.showModal()}
 				>
-					Import terrain
+					{I18N.t("Import terrain")}
 				</Button>
 				<Button
 					size="md"
 					disabled={disabled || !hasTerrain}
 					onClick={() => onChange(null)}
 				>
-					Use Earth
+					{I18N.t("Use Earth")}
 				</Button>
 			</div>
 			<dialog
@@ -73,32 +75,32 @@ export function TerrainPanel({
 			>
 				<div className="mb-3 flex items-center justify-between gap-2">
 					<h2 id="terrain-import-title" className={uiTokens.type.title}>
-						Import terrain
+						{I18N.t("Import terrain")}
 					</h2>
 					<Button
 						onClick={() => dialog.current?.close()}
-						aria-label="Close terrain import"
+						aria-label={I18N.t("Close terrain import")}
 					>
-						Close
+						{I18N.t("Close")}
 					</Button>
 				</div>
 				<fieldset disabled={disabled || upload.busy} className="space-y-2">
 					<FilePicker
-						label="Heightmap"
+						label={I18N.t("Heightmap")}
 						help={GCM_INPUT_HELP.heightmap}
-						action="Choose heightmap"
+						action={I18N.t("Choose heightmap")}
 						accept=".png,.bin"
-						emptyLabel="Required"
+						emptyLabel={I18N.t("Required")}
 						fileName={upload.heightmap?.name ?? null}
 						disabled={disabled || upload.busy}
 						onSelect={(file) => void upload.read({ file, kind: "heightmap" })}
 					/>
 					<FilePicker
-						label="Land mask"
+						label={I18N.t("Land mask")}
 						help={GCM_INPUT_HELP.landMask}
-						action="Choose land mask"
+						action={I18N.t("Choose land mask")}
 						accept=".png"
-						emptyLabel="Optional"
+						emptyLabel={I18N.t("Optional")}
 						fileName={upload.mask?.name ?? null}
 						disabled={disabled || upload.busy}
 						onSelect={(file) => void upload.read({ file, kind: "mask" })}
@@ -109,7 +111,7 @@ export function TerrainPanel({
 								<div className="flex items-center gap-2">
 									<ToggleRow
 										className="flex-1"
-										label="Invert mask"
+										label={I18N.t("Invert mask")}
 										help={GCM_INPUT_HELP.invertMask}
 										checked={upload.mapping.invertMask}
 										onChange={(invertMask) =>
@@ -123,9 +125,9 @@ export function TerrainPanel({
 											uiTokens.uploadAction.secondary,
 										)}
 										onClick={upload.removeMask}
-										aria-label="Remove mask"
+										aria-label={I18N.t("Remove mask")}
 									>
-										Remove
+										{I18N.t("Remove")}
 									</Button>
 								</div>
 							)}
@@ -133,7 +135,7 @@ export function TerrainPanel({
 								<>
 									<div className="grid grid-cols-2 items-start gap-3">
 										<LabeledNumberInput
-											label="Maximum elevation"
+											label={I18N.t("Maximum elevation")}
 											help={GCM_INPUT_HELP.maxElevation}
 											unit={unitSystem === "imperial" ? "ft" : "m"}
 											value={
@@ -145,7 +147,7 @@ export function TerrainPanel({
 															).toFixed(2),
 														)
 											}
-											placeholder="Enter elevation"
+											placeholder={I18N.t("Enter elevation")}
 											min={0}
 											disabled={disabled || upload.busy}
 											onChange={(value) => {
@@ -158,7 +160,7 @@ export function TerrainPanel({
 											}}
 										/>
 										<LabeledSlider
-											label="Sea level"
+											label={I18N.t("Sea level")}
 											rangeClassName={uiTokens.field.grayscaleRange}
 											help={GCM_INPUT_HELP.seaLevel}
 											value={`${upload.mapping.seaLevel} / 255`}
@@ -172,9 +174,11 @@ export function TerrainPanel({
 										/>
 									</div>
 									<div className="space-y-2">
-										<span className={uiTokens.type.label}>Map orientation</span>
+										<span className={uiTokens.type.label}>
+											{I18N.t("Map orientation")}
+										</span>
 										<LabeledSlider
-											label="North pole latitude"
+											label={I18N.t("North pole latitude")}
 											help={GCM_INPUT_HELP.mapPoleLatitude}
 											value={formatWithUnit(
 												upload.orientation.poleLatitudeDeg,
@@ -194,7 +198,7 @@ export function TerrainPanel({
 											}
 										/>
 										<LabeledSlider
-											label="North pole longitude"
+											label={I18N.t("North pole longitude")}
 											help={GCM_INPUT_HELP.mapPoleLongitude}
 											value={formatWithUnit(
 												upload.orientation.poleLongitudeDeg,
@@ -218,7 +222,7 @@ export function TerrainPanel({
 											}
 										/>
 										<LabeledSlider
-											label="Spin"
+											label={I18N.t("Spin")}
 											help={GCM_INPUT_HELP.mapSpin}
 											value={formatWithUnit(upload.orientation.spinDeg, "°", 0)}
 											min={0}
@@ -241,7 +245,7 @@ export function TerrainPanel({
 				</fieldset>
 				{upload.busy && (
 					<p role="status" className={uiTokens.field.note}>
-						Reading terrain…
+						{I18N.t("Reading terrain…")}
 					</p>
 				)}
 				{upload.error && (
@@ -255,7 +259,9 @@ export function TerrainPanel({
 							readTerrain={readTerrain}
 							starPoints={starPoints}
 							zoneCircles={zoneCircles}
-							label={`Land mask · ${formatWithUnit(upload.summary.landPercent, "%", 1)} land`}
+							label={I18N.t("Land mask · {percent} land", {
+								percent: formatWithUnit(upload.summary.landPercent, "%", 1),
+							})}
 						/>
 					</div>
 				)}
@@ -281,7 +287,7 @@ export function TerrainPanel({
 							dialog.current?.close()
 						}}
 					>
-						Apply terrain
+						{I18N.t("Apply terrain")}
 					</Button>
 				</div>
 			</dialog>

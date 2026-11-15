@@ -14,6 +14,7 @@ import {
 	formatTemperature,
 	formatWithUnit,
 } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const TIDAL_LOCK_LABELS: Record<OrbitTidalLockStatus, string> = {
 	locked: "Likely tidally locked",
@@ -50,23 +51,26 @@ function starRows({
 }: GcmStarRowsRequest): ReadonlyArray<GcmBalanceRow> {
 	return [
 		{
-			label: "Temperature",
+			label: I18N.t("Temperature"),
 			value: formatWithUnit(summary.star.temperatureK, "K", 0),
 		},
-		{ label: "Luminosity", value: luminosity(summary.star.luminositySolar) },
 		{
-			label: "Radius",
+			label: I18N.t("Luminosity"),
+			value: luminosity(summary.star.luminositySolar),
+		},
+		{
+			label: I18N.t("Radius"),
 			value: formatWithUnit(summary.star.radiusSolar, "R☉", 3),
 		},
 		{
-			label: "Main sequence",
+			label: I18N.t("Main sequence"),
 			value: formatWithUnit(summary.star.lifetimeGyr, "Gyr", 1),
 		},
 		{
-			label: "Flux at the planet",
+			label: I18N.t("Flux at the planet"),
 			value: formatWithUnit(summary.orbit.insolationWm2, "W/m²", 0),
 		},
-		{ label: "Spectral class", value: summary.star.spectralClass },
+		{ label: I18N.t("Spectral class"), value: summary.star.spectralClass },
 	]
 }
 
@@ -76,7 +80,7 @@ function planetRows({
 	const { planet } = summary
 	return [
 		{
-			label: "Mass",
+			label: I18N.t("Mass"),
 			value: formatWithUnit(
 				planet.massEarth,
 				"M⊕",
@@ -84,23 +88,26 @@ function planetRows({
 			),
 		},
 		{
-			label: "Radius",
+			label: I18N.t("Radius"),
 			value: `${amount(planet.radiusKm, 0)} km · ${formatWithUnit(planet.radiusEarth, "R⊕", 2)}`,
 		},
-		{ label: "Density", value: formatWithUnit(planet.densityGcc, "g/cm³", 2) },
 		{
-			label: "Gravity",
+			label: I18N.t("Density"),
+			value: formatWithUnit(planet.densityGcc, "g/cm³", 2),
+		},
+		{
+			label: I18N.t("Gravity"),
 			value: `${formatWithUnit(planet.gravityMs2, "m/s²", 2)} · ${formatWithUnit(planet.gravityEarth, "g", 2)}`,
 		},
 		{
-			label: "Escape velocity",
+			label: I18N.t("Escape velocity"),
 			value: formatWithUnit(planet.escapeVelocityKms, "km/s", 1),
 		},
 		{
-			label: "Composition",
+			label: I18N.t("Composition"),
 			value: `Fe ${Math.round(planet.composition.core * 100)}% · H₂O ${Math.round(planet.composition.water * 100)}%`,
 		},
-		{ label: "Type", value: planet.label },
+		{ label: I18N.t("Type"), value: I18N.t(planet.label) },
 	]
 }
 
@@ -120,13 +127,22 @@ function tidalLockAdvice({
 	synchronous,
 }: GcmTidalLockAdviceRequest): string {
 	const status = tidalLockStatus({ summary })
-	const estimate = `Tidal lock estimate: ${TIDAL_LOCK_LABELS[status].toLowerCase()} (${durationGyr(summary.orbit.tidalLockGyr)}, stellar age ${formatWithUnit(summary.star.ageGyr, "Gyr", 1)}).`
+	const estimate = I18N.t(
+		"Tidal lock estimate: {status} ({timescale}, stellar age {age}).",
+		{
+			status: I18N.t(TIDAL_LOCK_LABELS[status]).toLowerCase(),
+			timescale: durationGyr(summary.orbit.tidalLockGyr),
+			age: formatWithUnit(summary.star.ageGyr, "Gyr", 1),
+		},
+	)
 	if (status === "locked" && !synchronous)
-		return `${estimate} Consider enabling Tidally locked.`
+		return I18N.t("{estimate} Consider enabling Tidally locked.", { estimate })
 	if (status === "may" && !synchronous)
-		return `${estimate} Tidally locked is optional.`
+		return I18N.t("{estimate} Tidally locked is optional.", { estimate })
 	if (status === "not" && synchronous)
-		return `${estimate} The star is fixed in longitude regardless.`
+		return I18N.t("{estimate} The star is fixed in longitude regardless.", {
+			estimate,
+		})
 	return estimate
 }
 
@@ -136,46 +152,52 @@ function orbitRows({
 	const range = summary.orbit.distanceRange
 	const lock = tidalLockStatus({ summary })
 	return [
-		{ label: "Semi-major axis", value: distanceAu(summary.semiMajorAxisAu) },
 		{
-			label: "Perihelion / aphelion",
+			label: I18N.t("Semi-major axis"),
+			value: distanceAu(summary.semiMajorAxisAu),
+		},
+		{
+			label: I18N.t("Perihelion / aphelion"),
 			value: `${distanceAu(range.perihelionAu)} · ${distanceAu(range.aphelionAu)}`,
 		},
 		{
-			label: "Habitable zone (estimate)",
+			label: I18N.t("Habitable zone (estimate)"),
 			value: `${distanceAu(summary.orbit.zones.habitableInnerAu)} – ${distanceAu(summary.orbit.zones.habitableOuterAu)}`,
 		},
 		{
-			label: "Insolation",
+			label: I18N.t("Insolation"),
 			value: formatWithUnit(summary.orbit.insolationWm2, "W/m²", 0),
 		},
 		{
-			label: "Equilibrium temperature",
+			label: I18N.t("Equilibrium temperature"),
 			value: formatTemperature(
 				summary.equilibriumTemperatureK - 273.15,
 				"metric",
 			),
 		},
 		{
-			label: "Surface temperature (estimate)",
+			label: I18N.t("Surface temperature (estimate)"),
 			value: formatTemperature(
 				summary.atmosphere.surfaceTemperatureK - 273.15,
 				"metric",
 			),
 		},
 		{
-			label: "Hill radius",
+			label: I18N.t("Hill radius"),
 			value: distanceAu(summary.orbit.hillRadiusAu),
 		},
 		{
-			label: "Roche limit",
+			label: I18N.t("Roche limit"),
 			value: formatWithUnit(summary.orbit.rocheLimitAu, "AU", 4),
 		},
 		{
-			label: "Tidal locking",
-			value: `${TIDAL_LOCK_LABELS[lock]} · ${durationGyr(summary.orbit.tidalLockGyr)}`,
+			label: I18N.t("Tidal locking"),
+			value: `${I18N.t(TIDAL_LOCK_LABELS[lock])} · ${durationGyr(summary.orbit.tidalLockGyr)}`,
 		},
-		{ label: "Closest approach", value: summary.orbit.closestApproach },
+		{
+			label: I18N.t("Closest approach"),
+			value: I18N.t(summary.orbit.closestApproach),
+		},
 	]
 }
 
@@ -186,46 +208,46 @@ function atmosphereRows({
 	const { atmosphere } = summary
 	return [
 		{
-			label: "Mean molar mass",
+			label: I18N.t("Mean molar mass"),
 			value: formatWithUnit(atmosphere.meanMolarMass, "g/mol", 2),
 		},
 		{
-			label: "Heat capacity",
+			label: I18N.t("Heat capacity"),
 			value: formatWithUnit(atmosphere.heatCapacity, "J/(kg·K)", 0),
 		},
 		{
-			label: "Gas constant",
+			label: I18N.t("Gas constant"),
 			value: formatWithUnit(atmosphere.gasConstant, "J/(kg·K)", 1),
 		},
 		{
-			label: "Greenhouse estimate",
+			label: I18N.t("Greenhouse estimate"),
 			value: formatWithUnit(atmosphere.greenhouseK, "K", 1),
 		},
 		{
-			label: "Surface temperature (estimate)",
+			label: I18N.t("Surface temperature (estimate)"),
 			value: formatTemperature(
 				atmosphere.surfaceTemperatureK - 273.15,
 				unitSystem,
 			),
 		},
 		{
-			label: "Equilibrium temperature",
+			label: I18N.t("Equilibrium temperature"),
 			value: formatTemperature(
 				summary.equilibriumTemperatureK - 273.15,
 				unitSystem,
 			),
 		},
 		{
-			label: "Scale height",
+			label: I18N.t("Scale height"),
 			value: formatWithUnit(atmosphere.scaleHeightKm, "km", 1),
 		},
 		{
-			label: "Atmosphere height",
+			label: I18N.t("Atmosphere height"),
 			value: formatWithUnit(atmosphere.atmosphereHeightKm, "km", 0),
 		},
 		{
-			label: "Climate",
-			value: CELESTIAL_ATMOSPHERE.REGIME_LABELS[atmosphere.regime],
+			label: I18N.t("Climate"),
+			value: I18N.t(CELESTIAL_ATMOSPHERE.REGIME_LABELS[atmosphere.regime]),
 		},
 	]
 }

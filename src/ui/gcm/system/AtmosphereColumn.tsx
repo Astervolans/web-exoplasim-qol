@@ -1,5 +1,8 @@
+import { CELESTIAL_ATMOSPHERE } from "@/model/celestial/atmosphere"
+import type { AtmosphereRegime } from "@/model/celestial/atmosphere/types"
 import { uiPalette } from "@/ui/components/tokens"
 import type { GcmAtmosphereColumnProps } from "@/ui/gcm/system/types"
+import { I18N } from "@/ui/i18n"
 
 const TICK_LADDER = [1, 2, 5, 10, 20, 50, 100, 200, 500] as const
 const HEIGHT_EXPONENT = 0.55
@@ -26,6 +29,11 @@ const PLOT = {
 const LABEL_X = 198
 const LABEL_PITCH = 12
 const SAMPLES = 60
+const HABITABLE_REGIMES: ReadonlyArray<AtmosphereRegime> = [
+	"thinHabitable",
+	"habitable",
+	"thickHabitable",
+]
 
 function clampCurveX(value: number): number {
 	if (!Number.isFinite(value)) return PLOT.curveLeft
@@ -155,31 +163,41 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 		{
 			y: yOf(profile.tropopauseKm),
 			color: uiPalette.atmosphere.tropopause,
-			label: `Tropopause ${Math.round(profile.tropopauseKm)} km`,
+			label: I18N.t("Tropopause {height} km", {
+				height: Math.round(profile.tropopauseKm),
+			}),
 		},
 		{
 			y: yOf(profile.emissionKm),
 			color: uiPalette.atmosphere.emission,
-			label: `IR emission ${Math.round(profile.emissionKm)} km`,
+			label: I18N.t("IR emission {height} km", {
+				height: Math.round(profile.emissionKm),
+			}),
 		},
 		{
 			y: yOf(profile.atmosphereTopKm),
 			color: uiPalette.atmosphere.marker,
-			label: `Top ${Math.round(profile.atmosphereTopKm)} km`,
+			label: I18N.t("Top {height} km", {
+				height: Math.round(profile.atmosphereTopKm),
+			}),
 		},
 	]
 	if (profile.armstrongKm !== null) {
 		planes.push({
 			y: yOf(profile.armstrongKm),
 			color: uiPalette.atmosphere.armstrong,
-			label: `Armstrong line ${Math.round(profile.armstrongKm)} km`,
+			label: I18N.t("Armstrong line {height} km", {
+				height: Math.round(profile.armstrongKm),
+			}),
 		})
 	}
 	if (profile.hypoxiaKm !== null) {
 		planes.push({
 			y: yOf(profile.hypoxiaKm),
 			color: uiPalette.atmosphere.hypoxia,
-			label: `Hypoxia ${Math.round(profile.hypoxiaKm)} km`,
+			label: I18N.t("Hypoxia {height} km", {
+				height: Math.round(profile.hypoxiaKm),
+			}),
 		})
 	}
 	const labelEntries: typeof planes = [...planes]
@@ -187,7 +205,10 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 		labelEntries.push({
 			y: breathableTopY,
 			color: uiPalette.atmosphere.breathable,
-			label: `Breathable ${Math.round(breathable.bottomKm)}–${Math.round(breathable.topKm)} km`,
+			label: I18N.t("Breathable {bottom}–{top} km", {
+				bottom: Math.round(breathable.bottomKm),
+				top: Math.round(breathable.topKm),
+			}),
 		})
 	}
 	labelEntries.sort((left, right) => left.y - right.y)
@@ -223,23 +244,21 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 	]
 		.map(([x, y]) => `${x},${y.toFixed(1)}`)
 		.join(" ")
+	const regimeLabel = I18N.t(CELESTIAL_ATMOSPHERE.REGIME_LABELS[props.regime])
 	let badgeColor = "#475569"
-	if (props.regimeLabel.includes("Runaway")) badgeColor = "#b91c1c"
-	else if (
-		props.regimeLabel.includes("Snowball") ||
-		props.regimeLabel.includes("Vacuum")
-	)
+	if (props.regime === "runawayGreenhouse") badgeColor = "#b91c1c"
+	else if (props.regime === "snowball" || props.regime === "vacuum")
 		badgeColor = "#0369a1"
-	else if (props.regimeLabel.includes("Habitable")) badgeColor = "#15803d"
+	else if (HABITABLE_REGIMES.includes(props.regime)) badgeColor = "#15803d"
 
 	return (
 		<svg
 			viewBox="0 0 320 344"
 			className="h-auto w-full"
 			role="img"
-			aria-label="Atmospheric profile"
+			aria-label={I18N.t("Atmospheric profile")}
 		>
-			<title>Atmospheric profile</title>
+			<title>{I18N.t("Atmospheric profile")}</title>
 			{breathable ? (
 				<rect
 					x={PLOT.left}
@@ -341,7 +360,7 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 				className="text-[9px]"
 				fill={uiPalette.atmosphere.temperature}
 			>
-				temperature K
+				{I18N.t("temperature K")}
 			</text>
 			<text
 				x={PLOT.curveRight - 8}
@@ -350,7 +369,7 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 				className="text-[9px]"
 				fill={uiPalette.atmosphere.pressure}
 			>
-				pressure bar
+				{I18N.t("pressure bar")}
 			</text>
 			<text
 				x={PLOT.right}
@@ -359,7 +378,10 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 				className="text-[9px]"
 				fill={uiPalette.atmosphere.cloud}
 			>
-				{`Cloud ${Math.round(profile.cloud.bottomKm)}–${Math.round(profile.cloud.topKm)} km`}
+				{I18N.t("Cloud {bottom}–{top} km", {
+					bottom: Math.round(profile.cloud.bottomKm),
+					top: Math.round(profile.cloud.topKm),
+				})}
 			</text>
 			{labels.map((entry) => (
 				<text
@@ -445,10 +467,10 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 				y={AXIS.captionY}
 				className="fill-slate-400 text-[8px]"
 			>
-				height axis exaggerated near the surface
+				{I18N.t("height axis exaggerated near the surface")}
 			</text>
 			<text x={8} y={16} className="fill-slate-700 text-[10px] font-semibold">
-				atmosphere // profile
+				{I18N.t("atmosphere // profile")}
 			</text>
 			<text
 				x={312}
@@ -457,7 +479,7 @@ export function AtmosphereColumn(props: GcmAtmosphereColumnProps) {
 				className="text-[10px] font-semibold"
 				fill={badgeColor}
 			>
-				{props.regimeLabel}
+				{regimeLabel}
 			</text>
 		</svg>
 	)

@@ -8,6 +8,7 @@ import { SystemSlider } from "@/ui/gcm/system/SystemSlider"
 import type { GcmSystemPanelProps } from "@/ui/gcm/system/types"
 import { GCM_SYSTEM_VIEW } from "@/ui/gcm/system/view"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 export function StarPanel({
 	config,
@@ -23,7 +24,7 @@ export function StarPanel({
 				activeLetter={star.spectralClass.slice(0, 1)}
 			/>
 			<SystemSlider
-				label="Stellar mass"
+				label={I18N.t("Stellar mass")}
 				help={GCM_INPUT_HELP.starMassSolar}
 				value={config.starMassSolar}
 				display={formatWithUnit(
@@ -47,7 +48,7 @@ export function StarPanel({
 				}
 			/>
 			<SystemSlider
-				label="Stellar age"
+				label={I18N.t("Stellar age")}
 				help={GCM_INPUT_HELP.starAgeGyr}
 				value={config.starAgeGyr}
 				display={formatWithUnit(config.starAgeGyr, "Gyr", 2)}
@@ -77,9 +78,9 @@ export function StarPanel({
 				))}
 			</div>
 			<p className={uiTokens.field.note}>
-				Main-sequence fits from Tout et al. (1996) at the star's age. ExoPlaSim
-				receives the effective temperature and the flux at the planet's orbit;
-				subgiants and remnants are not modelled.
+				{I18N.t(
+					"Main-sequence fits from Tout et al. (1996) at the star's age. ExoPlaSim receives the effective temperature and the flux at the planet's orbit; subgiants and remnants are not modelled.",
+				)}
 			</p>
 		</div>
 	)

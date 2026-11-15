@@ -14,6 +14,7 @@ import type {
 	GcmGasChange,
 } from "@/ui/gcm/types"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const MODE_OPTIONS: ReadonlyArray<GcmAtmosphereModeOption> = [
 	{ value: "partialPressures", label: "Gas mixture" },
@@ -39,13 +40,16 @@ export function GcmAtmosphereControls({
 				<div className="space-y-1">
 					<span className={uiTokens.field.label}>
 						<InputLabel
-							label="Atmosphere inputs"
+							label={I18N.t("Atmosphere inputs")}
 							help={GCM_INPUT_HELP.atmosphereMode}
 						/>
 					</span>
 					<SegmentedControl
 						fullWidth
-						options={MODE_OPTIONS}
+						options={MODE_OPTIONS.map((option) => ({
+							...option,
+							label: I18N.t(option.label),
+						}))}
 						value={config.mode}
 						onChange={(mode) => update({ mode })}
 					/>
@@ -53,7 +57,7 @@ export function GcmAtmosphereControls({
 				{config.mode === "pressureAndGasConstant" ? (
 					<>
 						<LabeledNumberInput
-							label="Total surface pressure"
+							label={I18N.t("Total surface pressure")}
 							help={GCM_INPUT_HELP.totalPressure}
 							unit="bar"
 							value={config.pressureBar}
@@ -67,7 +71,7 @@ export function GcmAtmosphereControls({
 							onChange={(pressureBar) => update({ pressureBar })}
 						/>
 						<LabeledNumberInput
-							label="Effective gas constant"
+							label={I18N.t("Effective gas constant")}
 							help={GCM_INPUT_HELP.gasConstant}
 							unit="J/(kg·K)"
 							value={config.gasConstant}
@@ -81,16 +85,16 @@ export function GcmAtmosphereControls({
 							onChange={(gasConstant) => update({ gasConstant })}
 						/>
 						<p className={note}>
-							Blank fields use ExoPlaSim’s Earth values. The gas pressures below
-							are optional shares of this total, and the gas constant describes
-							the whole atmosphere.
+							{I18N.t(
+								"Blank fields use ExoPlaSim’s Earth values. The gas pressures below are optional shares of this total, and the gas constant describes the whole atmosphere.",
+							)}
 						</p>
 					</>
 				) : (
 					<p className={note}>
-						Enter the pressure of each gas and the total pressure and gas
-						constant are calculated for you. Leave every gas blank to keep
-						ExoPlaSim’s Earth atmosphere.
+						{I18N.t(
+							"Enter the pressure of each gas and the total pressure and gas constant are calculated for you. Leave every gas blank to keep ExoPlaSim’s Earth atmosphere.",
+						)}
 					</p>
 				)}
 				{GCM_ATMOSPHERE.GASES.map((gas) => (
@@ -113,36 +117,33 @@ export function GcmAtmosphereControls({
 					/>
 				))}
 				<p className={note}>
-					Greyed values show Earth-like dry air at the current pressure. A blank
-					CO₂ field uses 300 ppm; other blank gases are left out of the mix.
-					Enter gases in bar, not ppm: for 550 ppm CO₂ at 1 bar, enter 0.00055.
-					In Gas mixture mode, also enter the background gases, because entering
-					only CO₂ gives a pure CO₂ atmosphere. To change CO₂ but keep Earth’s
-					pressure and gas constant, choose Pressure + gas constant, leave those
-					two blank, and enter only CO₂.
+					{I18N.t(
+						"Greyed values show Earth-like dry air at the current pressure. A blank CO₂ field uses 300 ppm; other blank gases are left out of the mix. Enter gases in bar, not ppm: for 550 ppm CO₂ at 1 bar, enter 0.00055. In Gas mixture mode, also enter the background gases, because entering only CO₂ gives a pure CO₂ atmosphere. To change CO₂ but keep Earth’s pressure and gas constant, choose Pressure + gas constant, leave those two blank, and enter only CO₂.",
+					)}
 				</p>
 			</fieldset>
 			{locked && (
 				<p className={note}>
-					Pressure and gas constant stay fixed. Edit Model CO₂ below to change
-					its concentration.
+					{I18N.t(
+						"Pressure and gas constant stay fixed. Edit Model CO₂ below to change its concentration.",
+					)}
 				</p>
 			)}
 			{result.ok === true ? (
-				<div className="space-y-1" aria-label="Resolved atmosphere">
+				<div className="space-y-1" aria-label={I18N.t("Resolved atmosphere")}>
 					<LabeledValueRow
-						label="Model surface pressure"
+						label={I18N.t("Model surface pressure")}
 						value={formatWithUnit(result.values.pressureBar, "bar", 5)}
 					/>
 					<LabeledValueRow
-						label="Model gas constant"
+						label={I18N.t("Model gas constant")}
 						value={formatWithUnit(result.values.gasConstant, "J/(kg·K)", 3)}
 					/>
 					<LabeledValueRow
-						label="Model CO₂"
+						label={I18N.t("Model CO₂")}
 						value={
 							<EditableNumberValue
-								label="Model CO₂"
+								label={I18N.t("Model CO₂")}
 								value={formatWithUnit(result.values.co2Ppm, "ppm", 2)}
 								numericValue={result.values.co2Ppm}
 								min={0}
@@ -172,16 +173,16 @@ export function GcmAtmosphereControls({
 				</p>
 			)}
 			<ToggleRow
-				label="Ozone"
+				label={I18N.t("Ozone")}
 				help={GCM_INPUT_HELP.ozone}
 				checked={config.ozone}
 				disabled={disabled}
 				onChange={(ozone) => update({ ozone })}
 			/>
 			<p className={note}>
-				Gas settings only change the bulk mix; they add no new absorption
-				physics. The model assumes Earth-like air, so be cautious with moist
-				atmospheres dominated by hydrogen or helium.
+				{I18N.t(
+					"Gas settings only change the bulk mix; they add no new absorption physics. The model assumes Earth-like air, so be cautious with moist atmospheres dominated by hydrogen or helium.",
+				)}
 			</p>
 		</div>
 	)

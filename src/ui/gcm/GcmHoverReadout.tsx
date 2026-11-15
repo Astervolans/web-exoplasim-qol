@@ -3,6 +3,7 @@ import { uiTokens } from "@/ui/components/tokens"
 import { GCM_HOVER } from "@/ui/gcm/hover"
 import type { GcmHoverReadoutProps } from "@/ui/gcm/hover/types"
 import { GCM_PERIOD_VIEW } from "@/ui/gcm/period-view"
+import { I18N } from "@/ui/i18n"
 
 export function GcmHoverReadout({
 	point,
@@ -27,7 +28,9 @@ export function GcmHoverReadout({
 			)}
 		>
 			{rows.length === 0 ? (
-				<span className={uiTokens.text.muted}>Hover map to inspect</span>
+				<span className={uiTokens.text.muted}>
+					{I18N.t("Hover map to inspect")}
+				</span>
 			) : (
 				<>
 					<div className="flex gap-x-3">
@@ -50,9 +53,12 @@ export function GcmHoverReadout({
 								className="relative mt-1 flex h-10 gap-px"
 								role="img"
 								aria-label={months
-									.map(
-										({ month, year, formatted }) =>
-											`${GCM_PERIOD_VIEW.monthName(month)} year ${year}: ${formatted}`,
+									.map(({ month, year, formatted }) =>
+										I18N.t("{month} year {year}: {value}", {
+											month: GCM_PERIOD_VIEW.monthName(month),
+											year,
+											value: formatted,
+										}),
 									)
 									.join(", ")}
 							>

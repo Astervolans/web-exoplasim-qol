@@ -4,6 +4,7 @@ import type { GcmFieldId } from "@/model/climate/gcm/fields/types"
 import { GCM_GRID } from "@/model/climate/gcm/grid"
 import type { GcmBalanceRow, GcmBalanceViewRequest } from "@/ui/gcm/types"
 import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+import { I18N } from "@/ui/i18n"
 
 const MILLIWATTS_PER_WATT = 1000
 
@@ -30,8 +31,13 @@ function rows({ averages, targeting }: GcmBalanceViewRequest): GcmBalanceRow[] {
 	)
 	const drift =
 		assessment.status === "spinning-up"
-			? `needs ${assessment.yearsNeeded} more year${assessment.yearsNeeded === 1 ? "" : "s"}`
-			: `${assessment.status === "balanced" ? "balanced" : "drifting"} · ${formatWithUnit(
+			? I18N.t(
+					assessment.yearsNeeded === 1
+						? "needs {years} more year"
+						: "needs {years} more years",
+					{ years: assessment.yearsNeeded },
+				)
+			: `${I18N.t(assessment.status === "balanced" ? "balanced" : "drifting")} · ${formatWithUnit(
 					Math.max(assessment.toaDriftPerYear, assessment.surfaceDriftPerYear) *
 						MILLIWATTS_PER_WATT,
 					"mW/m²/yr",
@@ -39,14 +45,22 @@ function rows({ averages, targeting }: GcmBalanceViewRequest): GcmBalanceRow[] {
 				)}`
 	return [
 		{
-			label: "Top of atmosphere",
-			value: month ? `${signed(monthMean("toaNetRadiation"))} last month` : "—",
+			label: I18N.t("Top of atmosphere"),
+			value: month
+				? I18N.t("{value} last month", {
+						value: signed(monthMean("toaNetRadiation")),
+					})
+				: "—",
 		},
 		{
-			label: "Surface",
-			value: month ? `${signed(monthMean("surfaceNetHeat"))} last month` : "—",
+			label: I18N.t("Surface"),
+			value: month
+				? I18N.t("{value} last month", {
+						value: signed(monthMean("surfaceNetHeat")),
+					})
+				: "—",
 		},
-		{ label: "Equilibrium", value: drift },
+		{ label: I18N.t("Equilibrium"), value: drift },
 	]
 }
 
