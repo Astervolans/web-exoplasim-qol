@@ -1,0 +1,329 @@
+export const uiPalette = {
+	terrain: {
+		ocean: [30, 90, 150],
+	},
+	terrainPreview: {
+		importedGrid: "rgba(100, 116, 139, 0.85)",
+		modelGrid: "rgba(14, 165, 233, 0.95)",
+		modelPole: "#0284c7",
+		modelPoleOutline: "rgba(255, 255, 255, 0.9)",
+	},
+	starPoint: {
+		substellar: "#f59e0b",
+		antistellar: "#1e293b",
+		outline: "rgba(255, 255, 255, 0.95)",
+	},
+	zoneCircle: {
+		tropic: "#f97316",
+		polar: "#8b5cf6",
+		halo: "rgba(255, 255, 255, 0.8)",
+	},
+	war: "#b91c1c",
+	siege: "#7f1d1d",
+	treasury: {
+		critical: "#b91c1c",
+		caution: "#f59e0b",
+		healthy: "#22c55e",
+	},
+	giantStar: "#ef4444",
+	moonHighland: "#c2c2c2",
+	martianHighland: "#d7724d",
+	brownDwarfL: "#a95632",
+	brownDwarfT: "#895949",
+	brownDwarfY: "#685b60",
+	neutronStarGlow: "#8cecff",
+	accent: "#4f46e5",
+	sectorBoundary: "#cbd5e1",
+	sectorCapital: "#38bdf8",
+	nationCapital: "#fbbf24",
+	rebel: "#000000",
+	activeDark: "#0f172a",
+	fieldMap: {
+		coastline: "rgba(15, 23, 42, 0.6)",
+		vector: "rgba(15, 23, 42, 0.62)",
+		vectorShadow: "rgba(255, 255, 255, 0.55)",
+	},
+	person: {
+		noHouse: "#94a3b8",
+		deceased: "#000000",
+		health: {
+			Excellent: "#15803d",
+			Good: "#22c55e",
+			Fine: "#84cc16",
+			Poor: "#f59e0b",
+			"Near death": "#ea580c",
+			Dying: "#b91c1c",
+		},
+		trait: {
+			virtue: "#0d9488",
+			vice: "#e11d48",
+			neutral: "#7c3aed",
+			gift: "#0284c7",
+			defect: "#ea580c",
+			lineage: "#ca8a04",
+		},
+		kinship: {
+			cousin: "#fca5a5",
+			"uncle-niece": "#ef4444",
+			"half-sibling": "#b91c1c",
+			sibling: "#7f1d1d",
+		},
+		condition: ["#eab308", "#f59e0b", "#f97316", "#ea580c", "#b91c1c"],
+		opinion: {
+			positive: "#0d9488",
+			negative: "#e11d48",
+			neutral: "#94a3b8",
+		},
+	},
+	swatch: {
+		stripeBackground: "rgba(15, 23, 42, 0.85)",
+		stripedBorder: "rgba(255, 255, 255, 0.15)",
+		plainBorder: "rgba(203, 213, 225, 0.8)",
+	},
+	celestial: {
+		star: "#d97706",
+		planet: "#0284c7",
+		orbit: "#94a3b8",
+		orbitFocus: "#475569",
+		habitableZone: "#16a34a",
+		snowLine: "#38bdf8",
+		axis: "#cbd5e1",
+	},
+	atmosphere: {
+		temperature: "#e11d48",
+		pressure: "#0369a1",
+		cloud: "#64748b",
+		terrain: "#a16207",
+		tropopause: "#d97706",
+		emission: "#ea580c",
+		armstrong: "#be123c",
+		hypoxia: "#ca8a04",
+		breathable: "#15803d",
+		marker: "#475569",
+		gas: {
+			H2: "#e11d48",
+			He: "#8b5cf6",
+			N2: "#64748b",
+			O2: "#0284c7",
+			Ar: "#a16207",
+			Ne: "#0d9488",
+			Kr: "#c2410c",
+			CO2: "#b45309",
+			H2O: "#0891b2",
+		},
+	},
+	phosphor: {
+		background: "#0b0f14",
+		panel: "#121a22",
+		panelDeep: "#0e151c",
+		line: "rgba(245, 231, 200, 0.14)",
+		sun: "#f2a33c",
+		reflected: "#c9b48a",
+		circulation: "#f08a3c",
+		space: "#e2564a",
+		storage: "#58b8d8",
+		text: "#f5e7c8",
+		muted: "#9a8f78",
+	},
+	energy: {
+		sunlight: "#d97706",
+		reflected: "#94a3b8",
+		circulation: "#ea580c",
+		toSpace: "#dc2626",
+		window: "#f97316",
+		storage: "#7c3aed",
+	},
+} as const
+
+export const uiChartPalette = {
+	moon: ["#0ea5e9", "#8b5cf6", "#10b981"] as const,
+	solar: "#f59e0b",
+	total: "#1e293b",
+	timingTiers: ["#0f172a", "#1e293b", "#334155"] as const,
+	successFill: "rgba(22, 163, 74, 0.1)",
+	successStroke: "#16a34a",
+	bench: {
+		current: "#4f46e5",
+		baseline: "#94a3b8",
+		secondary: "#f59e0b",
+		annexation: "#0d9488",
+		development: ["#e0e7ff", "#a5b4fc", "#6366f1", "#4338ca", "#1e1b4b"],
+		knowledge: [
+			"#ecfdf5",
+			"#d1fae5",
+			"#a7f3d0",
+			"#6ee7b7",
+			"#10b981",
+			"#047857",
+			"#064e3b",
+		],
+		boxStroke: "#334155",
+		boxFill: "rgba(79, 70, 229, 0.18)",
+		war: { winner: "#b91c1c", loser: "#fca5a5" },
+		rebellion: { winner: "#7c3aed", loser: "#c4b5fd" },
+		categories: [
+			"#4f46e5",
+			"#0ea5e9",
+			"#10b981",
+			"#f59e0b",
+			"#ef4444",
+			"#8b5cf6",
+			"#14b8a6",
+			"#f97316",
+			"#64748b",
+		] as const,
+		better: "text-emerald-600",
+		worse: "text-rose-600",
+		targetBand: "rgba(16, 185, 129, 0.14)",
+		targetBandStroke: "#10b981",
+	},
+	axisText: "#64748b",
+	axisTextStrong: "#475569",
+	gridLine: "#e2e8f0",
+	gridLineTranslucent: "rgba(148, 163, 184, 0.2)",
+	referenceLine: "#94a3b8",
+	tooltipBg: "#ffffff",
+	tone: {
+		neutral: "bg-slate-500",
+		warm: "bg-amber-500",
+		cool: "bg-sky-500",
+	},
+} as const
+
+export const uiTokens = {
+	uploadAction: {
+		base: "inline-flex min-h-8 items-center justify-center gap-1 px-2! py-1! text-xs! font-semibold normal-case! tracking-normal! shadow-sm enabled:cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:opacity-50!",
+		primary:
+			"border-slate-900! bg-slate-900! text-white! enabled:hover:border-slate-700! enabled:hover:bg-slate-700!",
+		secondary:
+			"border-slate-200! bg-white! text-slate-700! shadow-none! enabled:hover:border-slate-400!",
+	},
+	field: {
+		numberLabel:
+			"flex items-center justify-between gap-2 text-[11px] font-medium text-slate-700",
+		numberInput:
+			"w-full rounded-sm border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-50",
+		labelWithHelp: "inline-flex items-center gap-1",
+		helpTrigger:
+			"inline-flex shrink-0 cursor-help items-center rounded-full text-slate-400 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-slate-900",
+		helpIcon: "h-3.5 w-3.5",
+		fileRow: "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2",
+		label: "text-[11px] font-medium text-slate-700",
+		value: "font-mono text-[11px] text-slate-950",
+		valueEditable:
+			"cursor-text border-b border-dashed border-transparent hover:border-slate-400 focus-visible:outline-none",
+		valueInput:
+			"w-24 border-b border-slate-900 bg-transparent text-right font-mono text-[11px] text-slate-950 focus:outline-none",
+		range:
+			"block h-4 w-full cursor-pointer appearance-none bg-transparent disabled:cursor-not-allowed disabled:opacity-40 [&::-webkit-slider-runnable-track]:h-px [&::-webkit-slider-runnable-track]:bg-slate-300 [&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:h-[11px] [&::-webkit-slider-thumb]:w-[11px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-slate-900 [&::-moz-range-track]:h-px [&::-moz-range-track]:bg-slate-300 [&::-moz-range-thumb]:h-[11px] [&::-moz-range-thumb]:w-[11px] [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-slate-900 focus-visible:outline-none focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-slate-400",
+		grayscaleRange:
+			"[&::-webkit-slider-runnable-track]:!h-3 [&::-webkit-slider-runnable-track]:bg-gradient-to-r [&::-webkit-slider-runnable-track]:from-black [&::-webkit-slider-runnable-track]:to-white [&::-webkit-slider-thumb]:!mt-0 [&::-webkit-slider-thumb]:ring-1 [&::-webkit-slider-thumb]:ring-slate-400 [&::-moz-range-track]:!h-3 [&::-moz-range-track]:bg-gradient-to-r [&::-moz-range-track]:from-black [&::-moz-range-track]:to-white [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-slate-400",
+		check:
+			"h-3.5 w-3.5 shrink-0 cursor-pointer accent-slate-900 disabled:cursor-not-allowed",
+		note: "text-[10px] leading-snug text-slate-500",
+		disclosure:
+			"cursor-pointer select-none text-[11px] font-medium text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-slate-900",
+		fileName: "truncate text-xs text-slate-500",
+		actions: "grid grid-cols-2 gap-2",
+	},
+	section: {
+		header:
+			"flex w-full items-center gap-2 border-t border-slate-900 pt-1.5 text-left",
+		toggle:
+			"flex min-w-0 flex-1 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-950 focus-visible:outline-2 focus-visible:outline-slate-900",
+		chevron: "h-2.5 w-2.5 shrink-0 text-slate-400 transition-transform",
+		marker: "h-1.5 w-1.5 shrink-0 bg-slate-900",
+		action:
+			"font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-0",
+		body: "space-y-3 pt-2.5",
+	},
+	wiki: {
+		page: "space-y-2 overflow-x-hidden",
+		stats: "mt-3 grid grid-cols-2 gap-x-3 gap-y-1",
+		rows: "space-y-1",
+		row: "flex items-baseline justify-between gap-2",
+	},
+	tooltip: {
+		anchor: "inline-flex items-center",
+		body: "fixed z-50 w-64 max-w-[calc(100vw-1rem)] border border-slate-200 bg-white px-3 py-2 text-xs font-normal normal-case leading-relaxed tracking-normal whitespace-pre-line text-slate-600 shadow-lg rounded-md",
+		gap: 8,
+		viewportInset: 8,
+	},
+	surface: {
+		canvas: "bg-slate-100",
+		panel: "bg-white/95",
+		panelMuted: "bg-slate-50/90",
+		panelAccent: "bg-white/90",
+		overlay: "bg-slate-950/85 text-white",
+		overlaySubtle: "bg-slate-950/75 text-white",
+	},
+	border: {
+		default: "border-slate-200",
+		muted: "border-slate-200/80",
+		inverse: "border-white/10",
+		inverseStrong: "border-white/20",
+	},
+	text: {
+		primary: "text-slate-950",
+		muted: "text-slate-500",
+		subtle: "text-slate-400",
+		inverse: "text-white",
+		inverseMuted: "text-slate-400",
+		inverseSubtle: "text-slate-500",
+		sectorCapital: "text-sky-400",
+		nationCapital: "text-amber-400",
+	},
+	radius: {
+		sm: "rounded-md",
+		md: "rounded-lg",
+		lg: "rounded-xl",
+		xl: "rounded-2xl",
+		pill: "rounded-full",
+	},
+	shadow: {
+		sm: "shadow-sm",
+		md: "shadow-lg",
+		lg: "shadow-2xl",
+	},
+	blur: {
+		sm: "backdrop-blur-sm",
+		md: "backdrop-blur-md",
+	},
+	type: {
+		label: "font-mono text-[9px] uppercase tracking-[0.12em]",
+		labelMd: "font-mono text-[10px] uppercase tracking-[0.12em]",
+		labelWide: "font-mono text-[9px] uppercase tracking-[0.16em]",
+		labelSm: "text-[8px] font-semibold uppercase tracking-[0.08em]",
+		control: "text-[10px] font-semibold uppercase tracking-[0.08em]",
+		controlSm: "text-[9px] font-semibold uppercase tracking-[0.08em]",
+		controlTextSm: "text-[9px] font-semibold tracking-[0.08em]",
+		controlWide: "text-[10px] font-semibold uppercase tracking-[0.12em]",
+		controlLoose: "text-[10px] font-semibold uppercase tracking-[0.14em]",
+		value: "font-mono text-[11px]",
+		valueMd: "font-mono text-[12px]",
+		valueSm: "font-mono text-[10px]",
+		chartValue: "font-mono text-[7px] leading-none",
+		title: "text-sm font-semibold tracking-tight",
+		hero: "text-[30px] leading-snug [font-family:var(--font-jedar)]",
+	},
+} as const
+
+export type UiSurfaceTone = keyof typeof uiTokens.surface
+export type UiBorderTone = keyof typeof uiTokens.border
+export type UiRadius = keyof typeof uiTokens.radius
+export type UiShadow = keyof typeof uiTokens.shadow
+export type UiBlur = keyof typeof uiTokens.blur
+
+export const uiCoastalWaves = {
+	color: "#d5eef5",
+	tiers: [
+		{ width: 0.03, opacity: 0.05 },
+		{ width: 0.02, opacity: 0.15 },
+		{ width: 0.01, opacity: 0.3 },
+	],
+	renderOrder: 997,
+	maskRenderOrder: 996,
+	bandWidth: 0.003,
+	waterStencilRef: 1,
+	mapWidthScale: 2 / Math.PI,
+} as const

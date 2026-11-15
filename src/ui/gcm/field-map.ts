@@ -1,0 +1,521 @@
+import { GCM_CLASSIFICATION } from "@/model/climate/gcm/classification"
+import { GCM_FIELDS } from "@/model/climate/gcm/fields"
+import { GCM_TERRAIN_ORIENTATION } from "@/model/climate/gcm/terrain/orientation"
+import { uiPalette } from "@/ui/components/tokens"
+import { GCM_DISPLAY } from "@/ui/gcm/field-display"
+import { GCM_FIELD_SAMPLE } from "@/ui/gcm/field-sample"
+import type { GcmMapViewport } from "@/ui/gcm/map-navigation/types"
+import { GCM_MAP_ORIENTATION } from "@/ui/gcm/map-orientation"
+import { GCM_STAR_POINTS } from "@/ui/gcm/star-points"
+import type { GcmStarGlyph } from "@/ui/gcm/star-points/types"
+import type {
+	GcmClassPaint,
+	GcmFieldPaint,
+	GcmMapLayer,
+	GcmMapPaint,
+	GcmOrientedRasterRequest,
+	GcmRasterPaint,
+	GcmRotatedVectorPaint,
+} from "@/ui/gcm/types"
+import { GCM_ZONE_CIRCLES } from "@/ui/gcm/zone-circles"
+import { COASTLINE_SEGMENT } from "@/ui/genesis/shared/coastline-segment"
+
+const VECTOR_COLUMNS = 32
+const VECTOR_FULL_LENGTH_FRACTION = 0.9
+const COASTLINE_WIDTH = 1
+const VECTOR_WIDTH = 1.25
+
+const raster = document.createElement("canvas")
+const orientedRaster = document.createElement("canvas")
+let cachedLayer: GcmMapLayer | null = null
+let orientedLayer: GcmMapLayer | null = null
+// Coastlines change only with the view, so they are stroked into this
+// canvas once and copied on every redraw: stroking every segment each frame
+// competed with the model for the GPU.
+const coastlineLayer = document.createElement("canvas")
+let coastlineKey = ""
+let cachedCoastlines: GcmMapPaint["coastlines"] = null
+
+function wrapOffsets(viewport: GcmMapViewport): number[] {
+	const first = Math.floor((viewport.west + 180) / 360)
+	const last = Math.floor((viewport.west + viewport.longitudeSpan + 180) / 360)
+	return Array.from(
+		{ length: last - first + 1 },
+		(_, index) => (first + index) * 360,
+	)
+}
+
+function paintField({ snapshot, mode }: GcmFieldPaint) {
+	const grid = GCM_FIELDS.grid(snapshot)
+	const { longitudes } = grid
+	if (raster.width !== longitudes) raster.width = longitudes
+	if (raster.height !== GCM_FIELD_SAMPLE.RASTER_ROWS)
+		raster.height = GCM_FIELD_SAMPLE.RASTER_ROWS
+	const context = raster.getContext("2d") as CanvasRenderingContext2D
+	const image = context.createImageData(
+		longitudes,
+		GCM_FIELD_SAMPLE.RASTER_ROWS,
+	)
+	const values = GCM_FIELDS.values({ snapshot, mode })
+	for (let y = 0; y < GCM_FIELD_SAMPLE.RASTER_ROWS; y++) {
+		const latitude = 90 - ((y + 0.5) / GCM_FIELD_SAMPLE.RASTER_ROWS) * 180
+		const [north, south, t] = GCM_FIELD_SAMPLE.rowBlend({ grid, latitude })
+		for (let x = 0; x < longitudes; x++) {
+			const column = GCM_FIELD_SAMPLE.modelColumn({ grid, column: x })
+			const value =
+				values[north * longitudes + column] * (1 - t) +
+				values[south * longitudes + column] * t
+			const [r, g, b] = GCM_DISPLAY.color({ mode, value })
+			const offset = (y * longitudes + x) * 4
+			image.data[offset] = r * 255
+			image.data[offset + 1] = g * 255
+			image.data[offset + 2] = b * 255
+			image.data[offset + 3] = 255
+		}
+	}
+	context.putImageData(image, 0, 0)
+}
+
+function paintClasses({ snapshot, classes, scheme }: GcmClassPaint) {
+	const definition = GCM_CLASSIFICATION.definition(scheme)
+	const grid = GCM_FIELDS.grid(snapshot)
+	const { longitudes } = grid
+	if (raster.width !== longitudes) raster.width = longitudes
+	if (raster.height !== GCM_FIELD_SAMPLE.RASTER_ROWS)
+		raster.height = GCM_FIELD_SAMPLE.RASTER_ROWS
+	const context = raster.getContext("2d") as CanvasRenderingContext2D
+	const image = context.createImageData(
+		longitudes,
+		GCM_FIELD_SAMPLE.RASTER_ROWS,
+	)
+	for (let y = 0; y < GCM_FIELD_SAMPLE.RASTER_ROWS; y++) {
+		const latitude = 90 - ((y + 0.5) / GCM_FIELD_SAMPLE.RASTER_ROWS) * 180
+		const [north, south, t] = GCM_FIELD_SAMPLE.rowBlend({ grid, latitude })
+		const row = t < 0.5 ? north : south
+		for (let x = 0; x < longitudes; x++) {
+			const classId =
+				classes[
+					row * longitudes + GCM_FIELD_SAMPLE.modelColumn({ grid, column: x })
+				]
+			const [r, g, b] = definition.color(classId)
+			const offset = (y * longitudes + x) * 4
+			image.data[offset] = r * 255
+			image.data[offset + 1] = g * 255
+			image.data[offset + 2] = b * 255
+			image.data[offset + 3] = 255
+		}
+	}
+	context.putImageData(image, 0, 0)
+}
+
+function paintTerrain(
+	layer: Extract<GcmMapPaint["layer"], { kind: "terrain" }>,
+) {
+	const { terrain, maxElevationM } = layer
+	const { width, height } = terrain
+	if (raster.width !== width) raster.width = width
+	if (raster.height !== height) raster.height = height
+	const context = raster.getContext("2d") as CanvasRenderingContext2D
+	const image = context.createImageData(width, height)
+	const maximum = Math.max(1, maxElevationM)
+	for (let y = 0; y < height; y++) {
+		for (let x = 0; x < width; x++) {
+			const elevation = terrain.elevationM[y * width + x]
+			const offset = (y * width + x) * 4
+			const color = GCM_DISPLAY.terrainColor({
+				value: elevation,
+				min: 0,
+				max: maximum,
+				land: terrain.land[y * width + x],
+			})
+			image.data[offset] = color[0] * 255
+			image.data[offset + 1] = color[1] * 255
+			image.data[offset + 2] = color[2] * 255
+			image.data[offset + 3] = 255
+		}
+	}
+	context.putImageData(image, 0, 0)
+}
+
+function paintRaster({ width, height, color }: GcmRasterPaint) {
+	if (raster.width !== width) raster.width = width
+	if (raster.height !== height) raster.height = height
+	const context = raster.getContext("2d") as CanvasRenderingContext2D
+	const image = context.createImageData(width, height)
+	for (let index = 0; index < width * height; index++) {
+		const [r, g, b] = color(index)
+		image.data[index * 4] = r * 255
+		image.data[index * 4 + 1] = g * 255
+		image.data[index * 4 + 2] = b * 255
+		image.data[index * 4 + 3] = 255
+	}
+	context.putImageData(image, 0, 0)
+}
+
+// Re-samples the model-frame raster into the imported map's coordinates, so
+// every layer is drawn in the frame the user imported the terrain in.
+function paintOrientedRaster({
+	orientation,
+	nearest,
+}: GcmOrientedRasterRequest) {
+	const width = raster.width
+	const height = raster.height
+	const source = (
+		raster.getContext("2d") as CanvasRenderingContext2D
+	).getImageData(0, 0, width, height)
+	orientedRaster.width = width
+	orientedRaster.height = height
+	const context = orientedRaster.getContext("2d") as CanvasRenderingContext2D
+	const image = context.createImageData(width, height)
+	image.data.set(
+		GCM_MAP_ORIENTATION.resample({
+			orientation,
+			width,
+			height,
+			source: source.data,
+			nearest,
+		}),
+	)
+	context.putImageData(image, 0, 0)
+}
+
+function paintCoastlines(paint: GcmMapPaint) {
+	const { canvas, coastlines, viewport } = paint
+	if (!coastlines) return
+	const { width, height } = canvas
+	const key = [
+		coastlines.rings.length,
+		width,
+		height,
+		canvas.clientWidth,
+		viewport.west,
+		viewport.north,
+		viewport.longitudeSpan,
+		viewport.latitudeSpan,
+	].join()
+	if (key !== coastlineKey || coastlines !== cachedCoastlines) {
+		coastlineKey = key
+		cachedCoastlines = coastlines
+		coastlineLayer.width = width
+		coastlineLayer.height = height
+		strokeCoastlines(paint)
+	}
+	;(canvas.getContext("2d") as CanvasRenderingContext2D).drawImage(
+		coastlineLayer,
+		0,
+		0,
+	)
+}
+
+function strokeCoastlines({ canvas, coastlines, viewport }: GcmMapPaint) {
+	if (!coastlines) return
+	const context = coastlineLayer.getContext("2d") as CanvasRenderingContext2D
+	const { width, height } = canvas
+	context.strokeStyle = uiPalette.fieldMap.coastline
+	context.lineWidth = (COASTLINE_WIDTH * canvas.width) / canvas.clientWidth
+	context.beginPath()
+	for (const shift of wrapOffsets({
+		...viewport,
+		west: viewport.west - 360,
+		longitudeSpan: viewport.longitudeSpan + 720,
+	})) {
+		for (const ring of coastlines.rings) {
+			for (let index = 2; index < ring.length; index += 2) {
+				const fromLongitude = ring[index - 2]
+				const toLongitude = ring[index]
+				if (
+					COASTLINE_SEGMENT.isDatelineClipArtifact({
+						fromLongitude,
+						toLongitude,
+					})
+				)
+					continue
+				const delta = ((toLongitude - fromLongitude + 540) % 360) - 180
+				context.moveTo(
+					((fromLongitude + shift - viewport.west) / viewport.longitudeSpan) *
+						width,
+					((viewport.north - ring[index - 1]) / viewport.latitudeSpan) * height,
+				)
+				context.lineTo(
+					((fromLongitude + delta + shift - viewport.west) /
+						viewport.longitudeSpan) *
+						width,
+					((viewport.north - ring[index + 1]) / viewport.latitudeSpan) * height,
+				)
+			}
+		}
+	}
+	context.stroke()
+}
+
+function paintZoneCircles({ canvas, zoneCircles, viewport }: GcmMapPaint) {
+	if (zoneCircles.length === 0) return
+	const context = canvas.getContext("2d") as CanvasRenderingContext2D
+	const { width, height } = canvas
+	const scale = canvas.clientWidth > 0 ? canvas.width / canvas.clientWidth : 1
+	const segments = GCM_ZONE_CIRCLES.project({
+		paths: zoneCircles,
+		width,
+		height,
+		viewport,
+		shifts: wrapOffsets(viewport),
+	})
+	GCM_ZONE_CIRCLES.paint({ context, segments, scale })
+}
+
+function paintStarPoints({ canvas, starPoints, viewport }: GcmMapPaint) {
+	if (starPoints.length === 0) return
+	const context = canvas.getContext("2d") as CanvasRenderingContext2D
+	const { width, height } = canvas
+	const scale = canvas.clientWidth > 0 ? canvas.width / canvas.clientWidth : 1
+	const margin = 12 * scale
+	const glyphs: GcmStarGlyph[] = []
+	for (const point of starPoints) {
+		const longitude = ((((point.longitude + 180) % 360) + 360) % 360) - 180
+		for (const shift of wrapOffsets(viewport)) {
+			const x =
+				((longitude + shift - viewport.west) / viewport.longitudeSpan) * width
+			const y =
+				((viewport.north - point.latitude) / viewport.latitudeSpan) * height
+			if (x < -margin || x > width + margin) continue
+			if (y < -margin || y > height + margin) continue
+			glyphs.push({ kind: point.kind, x, y })
+		}
+	}
+	GCM_STAR_POINTS.paint({ context, glyphs, scale })
+}
+
+function paintVectors({ canvas, snapshot, mode, viewport }: GcmFieldPaint) {
+	const vectors = GCM_FIELDS.vectors({ snapshot, mode })
+	if (!vectors) return
+	const grid = GCM_FIELDS.grid(snapshot)
+	const stride = Math.max(
+		1,
+		Math.round(
+			(grid.longitudes * viewport.longitudeSpan) / (VECTOR_COLUMNS * 360),
+		),
+	)
+	const context = canvas.getContext("2d") as CanvasRenderingContext2D
+	const { width, height } = canvas
+	const { max } = GCM_FIELDS.definition(mode)
+	const cell = Math.min(
+		width / VECTOR_COLUMNS,
+		((width / grid.longitudes) * stride * 360) / viewport.longitudeSpan,
+	)
+	context.lineWidth = (VECTOR_WIDTH * canvas.width) / canvas.clientWidth
+	context.lineCap = "round"
+	for (let row = 0; row < grid.latitudes; row += stride) {
+		const y =
+			((viewport.north - grid.latitudesDeg[row]) / viewport.latitudeSpan) *
+			height
+		if (y < -cell || y > height + cell) continue
+		for (const shift of wrapOffsets(viewport)) {
+			for (let x = 0; x < grid.longitudes; x += stride) {
+				const index =
+					row * grid.longitudes +
+					GCM_FIELD_SAMPLE.modelColumn({ grid, column: x })
+				const u = vectors.u[index]
+				const v = vectors.v[index]
+				const length = Math.min(1, Math.hypot(u, v) / max)
+				if (length === 0) continue
+				const angle = Math.atan2(-v, u)
+				const reach = length * cell * VECTOR_FULL_LENGTH_FRACTION
+				const longitude = ((x + 0.5) / grid.longitudes) * 360 - 180 + shift
+				const centerX =
+					((longitude - viewport.west) / viewport.longitudeSpan) * width
+				if (centerX < -cell || centerX > width + cell) continue
+				const dx = Math.cos(angle) * reach
+				const dy = Math.sin(angle) * reach
+				for (const [style, shift] of [
+					[uiPalette.fieldMap.vectorShadow, 1],
+					[uiPalette.fieldMap.vector, 0],
+				] as const) {
+					context.strokeStyle = style
+					context.beginPath()
+					context.moveTo(centerX - dx / 2 + shift, y - dy / 2 + shift)
+					context.lineTo(centerX + dx / 2 + shift, y + dy / 2 + shift)
+					context.lineTo(
+						centerX + dx / 2 - Math.cos(angle - 0.5) * reach * 0.35 + shift,
+						y + dy / 2 - Math.sin(angle - 0.5) * reach * 0.35 + shift,
+					)
+					context.moveTo(centerX + dx / 2 + shift, y + dy / 2 + shift)
+					context.lineTo(
+						centerX + dx / 2 - Math.cos(angle + 0.5) * reach * 0.35 + shift,
+						y + dy / 2 - Math.sin(angle + 0.5) * reach * 0.35 + shift,
+					)
+					context.stroke()
+				}
+			}
+		}
+	}
+}
+
+// Arrows are placed at even map positions and sampled through the rotation,
+// so their spacing stays even when the model grid is tilted in the map.
+function paintRotatedVectors({
+	canvas,
+	snapshot,
+	mode,
+	viewport,
+	rotation,
+}: GcmRotatedVectorPaint) {
+	const vectors = GCM_FIELDS.vectors({ snapshot, mode })
+	if (!vectors) return
+	const grid = GCM_FIELDS.grid(snapshot)
+	const context = canvas.getContext("2d") as CanvasRenderingContext2D
+	const { width, height } = canvas
+	const { max } = GCM_FIELDS.definition(mode)
+	const columns = VECTOR_COLUMNS
+	const cell = width / columns
+	const rows = Math.max(1, Math.round(height / cell))
+	const longitudeStep = viewport.longitudeSpan / columns
+	const latitudeStep = viewport.latitudeSpan / rows
+	context.lineWidth = (VECTOR_WIDTH * canvas.width) / canvas.clientWidth
+	context.lineCap = "round"
+	for (let row = 0; row < rows; row++) {
+		const latitude = viewport.north - (row + 0.5) * latitudeStep
+		if (latitude < -90 || latitude > 90) continue
+		const y = ((viewport.north - latitude) / viewport.latitudeSpan) * height
+		for (let column = 0; column < columns; column++) {
+			const longitude = viewport.west + (column + 0.5) * longitudeStep
+			const model = GCM_TERRAIN_ORIENTATION.toModel({
+				rotation,
+				latitude,
+				longitude,
+			})
+			const u = GCM_FIELD_SAMPLE.sample({
+				grid,
+				values: vectors.u,
+				latitude: model.latitude,
+				longitude: model.longitude,
+			})
+			const v = GCM_FIELD_SAMPLE.sample({
+				grid,
+				values: vectors.v,
+				latitude: model.latitude,
+				longitude: model.longitude,
+			})
+			const length = Math.min(1, Math.hypot(u, v) / max)
+			if (!(length > 0)) continue
+			const tangent = GCM_TERRAIN_ORIENTATION.toSourceTangent({
+				rotation,
+				latitude: model.latitude,
+				longitude: model.longitude,
+				u,
+				v,
+			})
+			const angle = Math.atan2(-tangent.v, tangent.u)
+			const reach = length * cell * VECTOR_FULL_LENGTH_FRACTION
+			const centerX =
+				((longitude - viewport.west) / viewport.longitudeSpan) * width
+			const dx = Math.cos(angle) * reach
+			const dy = Math.sin(angle) * reach
+			for (const [style, shift] of [
+				[uiPalette.fieldMap.vectorShadow, 1],
+				[uiPalette.fieldMap.vector, 0],
+			] as const) {
+				context.strokeStyle = style
+				context.beginPath()
+				context.moveTo(centerX - dx / 2 + shift, y - dy / 2 + shift)
+				context.lineTo(centerX + dx / 2 + shift, y + dy / 2 + shift)
+				context.lineTo(
+					centerX + dx / 2 - Math.cos(angle - 0.5) * reach * 0.35 + shift,
+					y + dy / 2 - Math.sin(angle - 0.5) * reach * 0.35 + shift,
+				)
+				context.moveTo(centerX + dx / 2 + shift, y + dy / 2 + shift)
+				context.lineTo(
+					centerX + dx / 2 - Math.cos(angle + 0.5) * reach * 0.35 + shift,
+					y + dy / 2 - Math.sin(angle + 0.5) * reach * 0.35 + shift,
+				)
+				context.stroke()
+			}
+		}
+	}
+}
+
+export const GCM_FIELD_MAP = {
+	paint(paint: GcmMapPaint) {
+		const { canvas, layer, viewport } = paint
+		const context = canvas.getContext("2d") as CanvasRenderingContext2D
+		if (!layer) {
+			context.clearRect(0, 0, canvas.width, canvas.height)
+			paintZoneCircles(paint)
+			paintCoastlines(paint)
+			paintStarPoints(paint)
+			return
+		}
+		if (cachedLayer !== layer) {
+			if (layer.kind === "field") paintField({ canvas, ...layer, viewport })
+			else if (layer.kind === "terrain") paintTerrain(layer)
+			else if (layer.kind === "classes") paintClasses(layer)
+			else if (layer.kind === "downscaled-field") {
+				const { mode, values } = layer
+				paintRaster({
+					width: layer.width,
+					height: layer.height,
+					color: (index) => GCM_DISPLAY.color({ mode, value: values[index] }),
+				})
+			} else {
+				const { classes } = layer
+				const definition = GCM_CLASSIFICATION.definition(layer.scheme)
+				paintRaster({
+					width: layer.width,
+					height: layer.height,
+					color: (index) => definition.color(classes[index]),
+				})
+			}
+			cachedLayer = layer
+		}
+		const rotation =
+			layer.kind === "terrain"
+				? null
+				: GCM_TERRAIN_ORIENTATION.rotation(layer.orientation)
+		const tilted =
+			rotation !== null && !GCM_TERRAIN_ORIENTATION.isIdentity(rotation)
+		if (layer.kind !== "terrain" && rotation && tilted) {
+			if (orientedLayer !== layer) {
+				paintOrientedRaster({
+					orientation: layer.orientation,
+					nearest:
+						layer.kind === "classes" || layer.kind === "downscaled-classes",
+				})
+				orientedLayer = layer
+			}
+		}
+		context.clearRect(0, 0, canvas.width, canvas.height)
+		context.imageSmoothingEnabled = false
+		const width = (canvas.width * 360) / viewport.longitudeSpan
+		const height = (canvas.height * 180) / viewport.latitudeSpan
+		for (const shift of wrapOffsets(viewport)) {
+			const left = Math.round(((-180 + shift - viewport.west) / 360) * width)
+			const right = Math.round(((180 + shift - viewport.west) / 360) * width)
+			context.drawImage(
+				tilted ? orientedRaster : raster,
+				left,
+				((viewport.north - 90) / 180) * height,
+				right - left,
+				height,
+			)
+		}
+		paintZoneCircles(paint)
+		paintCoastlines(paint)
+		if (layer.kind === "field" || layer.kind === "downscaled-field") {
+			if (rotation && tilted)
+				paintRotatedVectors({
+					canvas,
+					snapshot: layer.snapshot,
+					mode: layer.mode,
+					viewport,
+					rotation,
+				})
+			else
+				paintVectors({
+					canvas,
+					snapshot: layer.snapshot,
+					mode: layer.mode,
+					viewport,
+				})
+		}
+		paintStarPoints(paint)
+	},
+}

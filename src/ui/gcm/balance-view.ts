@@ -1,0 +1,55 @@
+import { GCM_BALANCE } from "@/model/climate/gcm/balance"
+import { GCM_FIELDS } from "@/model/climate/gcm/fields"
+import type { GcmFieldId } from "@/model/climate/gcm/fields/types"
+import { GCM_GRID } from "@/model/climate/gcm/grid"
+import type { GcmBalanceRow, GcmBalanceViewRequest } from "@/ui/gcm/types"
+import { formatWithUnit } from "@/ui/genesis/shared/ui-format"
+
+const MILLIWATTS_PER_WATT = 1000
+
+function signed(value: number): string {
+	return `${value >= 0 ? "+" : ""}${formatWithUnit(value, "W/m²", 2)}`
+}
+
+function rows({ averages, targeting }: GcmBalanceViewRequest): GcmBalanceRow[] {
+	const month = averages.months[averages.months.length - 1]
+	const monthMean = (field: GcmFieldId) =>
+		month
+			? GCM_GRID.globalMean(
+					GCM_FIELDS.field({ snapshot: month.snapshot, field }),
+				)
+			: Number.NaN
+	const assessment = GCM_BALANCE.assess(
+		targeting
+			? averages.years.filter(
+					(year) =>
+						targeting.trialStartYear !== null &&
+						year.year > targeting.trialStartYear,
+				)
+			: averages.years,
+	)
+	const drift =
+		assessment.status === "spinning-up"
+			? `needs ${assessment.yearsNeeded} more year${assessment.yearsNeeded === 1 ? "" : "s"}`
+			: `${assessment.status === "balanced" ? "balanced" : "drifting"} · ${formatWithUnit(
+					Math.max(assessment.toaDriftPerYear, assessment.surfaceDriftPerYear) *
+						MILLIWATTS_PER_WATT,
+					"mW/m²/yr",
+					1,
+				)}`
+	return [
+		{
+			label: "Top of atmosphere",
+			value: month ? `${signed(monthMean("toaNetRadiation"))} last month` : "—",
+		},
+		{
+			label: "Surface",
+			value: month ? `${signed(monthMean("surfaceNetHeat"))} last month` : "—",
+		},
+		{ label: "Equilibrium", value: drift },
+	]
+}
+
+export const GCM_BALANCE_VIEW = {
+	rows,
+}

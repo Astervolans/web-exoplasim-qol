@@ -1,0 +1,27 @@
+import type { GcmTerrainOrientation } from "@/model/climate/gcm/terrain/orientation/types"
+
+export interface GcmTerrainImage {
+	name: string
+	width: number
+	height: number
+	samples: Float32Array
+	encoding: "normalized" | "metres"
+}
+
+export interface GcmTerrainFile {
+	name: string
+	buffer: ArrayBuffer
+}
+
+export interface GcmTerrainMapping {
+	maxElevationM: number
+	seaLevel: number
+	invertMask: boolean
+}
+
+export interface GcmTerrainImport {
+	heightmap: GcmTerrainImage
+	mask: GcmTerrainImage | null
+	mapping: GcmTerrainMapping
+	orientation: GcmTerrainOrientation
+}

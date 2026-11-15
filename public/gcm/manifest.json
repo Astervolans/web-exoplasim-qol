@@ -1,0 +1,52 @@
+{
+  "resolutions": [
+    {
+      "truncation": 21,
+      "layers": 5,
+      "latitudes": 32,
+      "precisionBytes": 8,
+      "ranks": [
+        2,
+        4,
+        8
+      ],
+      "downloadBytes": 4061126
+    },
+    {
+      "truncation": 21,
+      "layers": 10,
+      "latitudes": 32,
+      "precisionBytes": 8,
+      "ranks": [
+        2,
+        4,
+        8
+      ],
+      "downloadBytes": 4108619
+    },
+    {
+      "truncation": 42,
+      "layers": 5,
+      "latitudes": 64,
+      "precisionBytes": 8,
+      "ranks": [
+        2,
+        4,
+        8
+      ],
+      "downloadBytes": 11876715
+    },
+    {
+      "truncation": 42,
+      "layers": 10,
+      "latitudes": 64,
+      "precisionBytes": 8,
+      "ranks": [
+        2,
+        4,
+        8
+      ],
+      "downloadBytes": 12162866
+    }
+  ]
+}

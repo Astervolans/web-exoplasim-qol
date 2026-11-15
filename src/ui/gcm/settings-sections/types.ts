@@ -1,0 +1,23 @@
+import type { GcmConfig } from "@/model/climate/gcm/types"
+
+export type GcmSettingsSection =
+	| "planet"
+	| "star"
+	| "orbit"
+	| "atmosphere"
+	| "surface"
+	| "model"
+
+export type GcmSettingsMode = "standard" | "advanced"
+
+export interface GcmSettingsSectionQuery {
+	config: GcmConfig
+	section: GcmSettingsSection
+	mode: GcmSettingsMode
+}
+
+export interface GcmSectionSpec {
+	section: GcmSettingsSection
+	title: string
+	defaultOpen: boolean
+}
