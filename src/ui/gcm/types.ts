@@ -391,9 +391,23 @@ export interface GcmBrowserMemory {
 	usedJSHeapSize: number
 }
 
-export interface GcmSaveWarning {
+export interface GcmSaveEstimate {
 	bytes: number
-	available: number
+	// [JUSTIFICATION] Browsers without the heap report leave this unknown.
+	available: number | null
+	includesState: boolean
+}
+
+export type GcmSaveDialogState =
+	| { mode: "choose"; years: number }
+	| { mode: "confirm"; years: number; bytes: number; available: number }
+
+export interface GcmSaveDialogProps {
+	state: GcmSaveDialogState | null
+	estimate: (years: number) => GcmSaveEstimate
+	onYearsChange: (years: number) => void
+	onConfirm: () => void
+	onCancel: () => void
 }
 
 export interface GcmWorkerOption {

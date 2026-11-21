@@ -74,6 +74,7 @@ export const ZH_MESSAGES: I18nMessages = {
 	Clear: "清除",
 	Cancel: "取消",
 	"Saved history": "保存的历史",
+	"Save checkpoint": "保存检查点",
 	"Months of monthly means a checkpoint keeps as raw fields, for analysis in other software. The climatology of the years beyond them is saved too, so climate maps and classifications survive a reload.":
 		"检查点以原始场形式保留的月平均月数，便于在其他软件中分析。超出该范围的年份会连同其气候态一并保存，因此重新加载后气候图与气候分类保持不变。",
 	"{years} years": "{years} 年",
