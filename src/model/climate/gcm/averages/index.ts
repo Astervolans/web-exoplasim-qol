@@ -2,9 +2,11 @@ import type {
 	GcmAverageMerge,
 	GcmAverager,
 	GcmAveragerSample,
+	GcmAveragerSave,
 	GcmAverageState,
 	GcmAveragesRequest,
 	GcmClimateCache,
+	GcmClimateMerge,
 	GcmClimatology,
 	GcmMonthAccumulator,
 	GcmMonthlyMean,
@@ -19,12 +21,13 @@ import type { GcmSnapshot } from "@/model/climate/gcm/types"
 
 const MONTHS_PER_YEAR = 12
 const CLIMATE_YEARS = 10
-const HISTORY_MONTHS = (CLIMATE_YEARS + 1) * MONTHS_PER_YEAR
+const MAX_HISTORY_YEARS = CLIMATE_YEARS + 1
+const HISTORY_MONTHS = MAX_HISTORY_YEARS * MONTHS_PER_YEAR
 const climateCache = new WeakMap<GcmAverager, GcmClimateCache>()
 // PlaSim divides its calendar into twelve equally weighted sampling months.
 
 function create(): GcmAverager {
-	return { current: null, months: [], years: [] }
+	return { current: null, months: [], years: [], climate: null }
 }
 
 function yearly(averager: GcmAverager): GcmYearlyBalance | null {
@@ -101,6 +104,7 @@ function add({ averager, snapshot }: GcmAveragerSample): boolean {
 	averager.months = [...averager.months, close(current)].slice(-HISTORY_MONTHS)
 	const year = yearly(averager)
 	if (year) averager.years = [...averager.years, year]
+	dropSavedClimate(averager)
 	return true
 }
 
@@ -142,12 +146,28 @@ function annual(averager: GcmAverager): GcmSnapshot | null {
 export const GCM_AVERAGES = {
 	MONTHS_PER_YEAR,
 	CLIMATE_YEARS,
+	MAX_HISTORY_YEARS,
 	create,
 	add,
 	annual,
 	view: averages,
 	merge,
 	mergeMonths,
+	saved,
+}
+
+// A checkpoint can drop older months; the climatology they were reduced to
+// keeps the climate maps of a resumed run unchanged.
+function saved({ averager, climate, years }: GcmAveragerSave): GcmAverager {
+	const months = averager.months.slice(-Math.max(1, years) * MONTHS_PER_YEAR)
+	return {
+		...averager,
+		months,
+		climate:
+			completeYears(months).length >= CLIMATE_YEARS
+				? null
+				: (climate ?? averager.climate),
+	}
 }
 
 function merge({ averager, months, years }: GcmAverageMerge): void {
@@ -157,6 +177,7 @@ function merge({ averager, months, years }: GcmAverageMerge): void {
 		limit: HISTORY_MONTHS,
 	})
 	averager.years = years
+	dropSavedClimate(averager)
 }
 
 function mergeMonths({
@@ -174,14 +195,16 @@ function mergeMonths({
 		.slice(-limit)
 }
 
-function climatology(averager: GcmAverager): GcmClimatology {
+function completeYears(
+	months: ReadonlyArray<GcmMonthlyMean>,
+): GcmMonthlyMean[][] {
 	const grouped = new Map<number, GcmMonthlyMean[]>()
-	for (const month of averager.months) {
+	for (const month of months) {
 		const year = grouped.get(month.year) ?? []
 		year.push(month)
 		grouped.set(month.year, year)
 	}
-	const complete = [...grouped.values()]
+	return [...grouped.values()]
 		.filter(
 			(year) =>
 				year.length === MONTHS_PER_YEAR &&
@@ -189,22 +212,11 @@ function climatology(averager: GcmAverager): GcmClimatology {
 		)
 		.sort((a, b) => a[0].year - b[0].year)
 		.slice(-CLIMATE_YEARS)
-	const cached = climateCache.get(averager)?.climate
-	if (!complete.length)
-		return cached?.years === 0 ? cached : { months: [], years: 0 }
-	const lastYear = complete[complete.length - 1]
-	const lastMonth = lastYear.find(
-		(month) => month.month === MONTHS_PER_YEAR,
-	) as GcmMonthlyMean
-	if (
-		cached?.years === complete.length &&
-		cached.months[MONTHS_PER_YEAR - 1]?.snapshot.step ===
-			lastMonth.snapshot.step &&
-		cached.months[0].year === lastMonth.year
-	)
-		return cached
-	const months = [...Array(MONTHS_PER_YEAR).keys()].map((index) => {
-		const samples = complete.map(
+}
+
+function monthlyMean(years: ReadonlyArray<GcmMonthlyMean[]>): GcmMonthlyMean[] {
+	return [...Array(MONTHS_PER_YEAR).keys()].map((index) => {
+		const samples = years.map(
 			(year) =>
 				year.find((month) => month.month === index + 1) as GcmMonthlyMean,
 		)
@@ -219,7 +231,70 @@ function climatology(averager: GcmAverager): GcmClimatology {
 		}
 		return { ...last, snapshot }
 	})
-	return { months, years: complete.length }
+}
+
+// The saved climatology covers the years the live window lost, so it carries
+// the window's remaining weight.
+function mergeClimate({
+	stored,
+	live,
+	liveYears,
+	olderYears,
+}: GcmClimateMerge): GcmMonthlyMean[] {
+	const total = liveYears + olderYears
+	return live.map((month, index) => {
+		const values = month.snapshot.values
+		const older = stored.months[index].snapshot.values
+		const merged = new Float32Array(values.length)
+		for (let field = 0; field < merged.length; field++)
+			merged[field] =
+				(values[field] * liveYears + older[field] * olderYears) / total
+		return {
+			...month,
+			snapshot: { ...month.snapshot, values: merged },
+		}
+	})
+}
+
+// Older months dropped at save time can never come back, so the saved
+// climatology stands in until the live months have covered its years.
+function dropSavedClimate(averager: GcmAverager): void {
+	if (
+		averager.climate &&
+		completeYears(averager.months).length >= CLIMATE_YEARS
+	)
+		averager.climate = null
+}
+
+function climatology(averager: GcmAverager): GcmClimatology {
+	const stored = averager.climate
+	const years = completeYears(averager.months)
+	const cached = climateCache.get(averager)?.climate
+	if (!years.length)
+		return stored ?? (cached?.years === 0 ? cached : { months: [], years: 0 })
+	const lastYear = years[years.length - 1]
+	const lastMonth = lastYear.find(
+		(month) => month.month === MONTHS_PER_YEAR,
+	) as GcmMonthlyMean
+	const olderYears = stored
+		? Math.min(stored.years, CLIMATE_YEARS - years.length)
+		: 0
+	const total = years.length + olderYears
+	if (
+		cached?.years === total &&
+		cached.months[MONTHS_PER_YEAR - 1]?.snapshot.step ===
+			lastMonth.snapshot.step &&
+		cached.months[0].year === lastMonth.year
+	)
+		return cached
+	const live = monthlyMean(years)
+	return {
+		months:
+			stored && olderYears > 0
+				? mergeClimate({ stored, live, liveYears: years.length, olderYears })
+				: live,
+		years: total,
+	}
 }
 
 function averages({ averager, config }: GcmAveragesRequest): GcmAverageState {

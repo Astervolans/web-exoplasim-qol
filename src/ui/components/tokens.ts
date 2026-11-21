@@ -257,6 +257,10 @@ export const uiTokens = {
 		overlay: "bg-slate-950/85 text-white",
 		overlaySubtle: "bg-slate-950/75 text-white",
 	},
+	warning: {
+		panel: "border-l-2 border-amber-500 bg-amber-50 px-2 py-1.5",
+		text: "text-amber-900",
+	},
 	border: {
 		default: "border-slate-200",
 		muted: "border-slate-200/80",

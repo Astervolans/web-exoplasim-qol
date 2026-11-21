@@ -66,6 +66,32 @@ try {
     const restored = C.decode(encoded)
     assert.equal(A.view({ averager: restored.diagnostics.averager, config }).climateYears, 10)
     assert.deepEqual(A.view({ averager: restored.diagnostics.averager, config }).koppen, climate.koppen)
+    const meta = { format: C.FORMATS.cpu, config, precisionBytes: 8, date: latest.date, step: latest.step }
+    const restart = new Uint8Array([1]).buffer
+    const trimmedAverager = A.saved({
+        averager: history,
+        climate: { months: climate.climateMonths, years: climate.climateYears },
+        years: 1,
+    })
+    assert.equal(trimmedAverager.months.length, 12)
+    assert.equal(trimmedAverager.climate.years, 10)
+    const trimmed = C.decode(C.encode({ meta, terrain, diagnostics: { averager: trimmedAverager, snapshot: latest, targeting: null }, restart }))
+    const restoredTrim = trimmed.diagnostics.averager
+    assert.equal(restoredTrim.climate.months.length, 12)
+    const resumed = A.view({ averager: restoredTrim, config })
+    assert.equal(resumed.climateYears, 10)
+    assert.deepEqual(resumed.koppen, climate.koppen)
+    for (let month = 2; month <= 12; month++) A.add({ averager: restoredTrim, snapshot: snapshot({ year: 11, month }) })
+    A.add({ averager: restoredTrim, snapshot: snapshot({ year: 12, month: 1, dry: true }) })
+    const blending = A.view({ averager: restoredTrim, config })
+    assert.equal(blending.climateYears, 10)
+    assert.notDeepEqual(blending.climateMonths[0].snapshot.values, climate.climateMonths[0].snapshot.values)
+    assert.equal(restoredTrim.climate.years, 10)
+    const estimate = C.estimate({ config, terrain, historyYears: 1, restartBytes: restart.byteLength })
+    const exact = C.size({ meta, terrain, diagnostics: { averager: trimmedAverager, snapshot: latest, targeting: null }, restart })
+    assert(Math.abs(estimate - exact) / exact < 0.05, `estimate ${estimate} missed ${exact}`)
+    assert(C.estimate({ config, terrain, historyYears: 11, restartBytes: 0 }) > C.estimate({ config, terrain, historyYears: 1, restartBytes: 0 }))
+
     for (let month = 2; month <= 12; month++) feed({ year: 11, month })
     feed({ year: 12, month: 1, dry: true })
     const rolled = A.view({ averager: history, config })
@@ -80,5 +106,5 @@ try {
     const incomplete = { ...A.create(), months: history.months.filter((month) => month.year === 12) }
     assert.equal(A.view({ averager: incomplete, config }).climateYears, 0)
     assert.equal(A.view({ averager: incomplete, config }).koppen, null)
-    console.log("Ten-year monthly averaging, Csb→Cfb noise reduction, rolling years, partial-year exclusion, unchanged annual balance, extrema, worker mirroring and checkpoint round-trip passed.")
+    console.log("Ten-year monthly averaging, Csb→Cfb noise reduction, rolling years, partial-year exclusion, unchanged annual balance, extrema, worker mirroring, checkpoint round-trip, trimmed history with its saved climatology and the save estimate passed.")
 } finally { await server.close() }

@@ -72,6 +72,18 @@ export const ZH_MESSAGES: I18nMessages = {
 	Save: "保存",
 	Load: "加载",
 	Clear: "清除",
+	Cancel: "取消",
+	"Saved history": "保存的历史",
+	"Months of monthly means a checkpoint keeps as raw fields, for analysis in other software. The climatology of the years beyond them is saved too, so climate maps and classifications survive a reload.":
+		"检查点以原始场形式保留的月平均月数，便于在其他软件中分析。超出该范围的年份会连同其气候态一并保存，因此重新加载后气候图与气候分类保持不变。",
+	"{years} years": "{years} 年",
+	"1 year": "1 年",
+	"Estimated file ≈ {size}": "预计文件 ≈ {size}",
+	"Estimated file ≈ {size} plus the model state":
+		"预计文件 ≈ {size}，另加模式状态",
+	"This export needs about {size}, which may exceed the {free} the browser can still allocate.":
+		"本次导出约需 {size}，可能超出浏览器当前仍可分配的 {free}。",
+	"Export anyway": "仍然导出",
 	Status: "状态",
 	Ready: "就绪",
 	"Global means": "全球平均",

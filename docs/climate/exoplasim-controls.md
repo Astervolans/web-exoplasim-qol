@@ -151,7 +151,11 @@ Climate groups Köppen and Pasta child modes. Both classify the last 12 complete
 
 ## Save format and verification
 
-Checkpoint formats 22 (CPU) and 23 (GPU) store snapshots, interval/monthly temperature extrema, settings, terrain (with its map orientation), unfinished monthly accumulation, completed monthly means, the engine restart and automatic temperature-targeting progress/history. Older formats are rejected because their configuration or field layout differs. Loading remains paused until Resume.
+Checkpoint formats 24 (CPU) and 25 (GPU) store snapshots, interval/monthly temperature extrema, settings, terrain (with its map orientation), unfinished monthly accumulation, the saved monthly means, the climatology they were reduced to, the engine restart and automatic temperature-targeting progress/history. Older formats are rejected because their configuration or field layout differs. Loading remains paused until Resume.
+
+A checkpoint keeps the newest Saved history years of completed monthly means as raw fields, chosen in the Run panel (1 to 11 years, default 1). Raw fields dominate the file: one T63 ten-layer month is 7.1 MiB, so the old fixed 11-year window was 0.98 GiB of a 1.09 GiB file. The months outside the chosen window are reduced to the twelve monthly means of the run's climatology (up to ten years) and saved with their year count, so Köppen/Pasta maps and climate classifications survive a reload. A resumed run weights that saved climatology against its own complete years and keeps counting to ten; the dropped months themselves cannot come back. With ten or eleven saved years the climatology is derivable from the months, so it is not stored twice.
+
+The Run panel shows the estimated file size for the chosen history, adding the engine state once a save or load has measured it. Save assembles the file as a Blob from its parts, so the export never needs a second buffer the size of the file. When the browser reports less free heap than the exact file size, Save shows both figures and waits for Export anyway; cancelling keeps the run and its averages.
 
 Rebuild all variants without `--link-only` after changing the hook:
 

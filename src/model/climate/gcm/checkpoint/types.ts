@@ -29,3 +29,10 @@ export interface GcmCheckpointArray {
 	offset: number
 	bytes: number
 }
+
+export interface GcmCheckpointSizeRequest {
+	config: GcmConfig
+	terrain: GcmTerrain
+	historyYears: number
+	restartBytes: number | null
+}
