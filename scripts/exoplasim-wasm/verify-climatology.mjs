@@ -68,6 +68,13 @@ try {
     assert.deepEqual(A.view({ averager: restored.diagnostics.averager, config }).koppen, climate.koppen)
     const meta = { format: C.FORMATS.cpu, config, precisionBytes: 8, date: latest.date, step: latest.step }
     const restart = new Uint8Array([1]).buffer
+    // Format 22 is the previous CPU generation: same layout, no saved climatology.
+    const legacy = C.decode(C.encode({ meta: { ...meta, format: 22 }, terrain, diagnostics: { averager: history, snapshot: latest, targeting: null }, restart }))
+    assert.equal(legacy.meta.format, C.FORMATS.cpu)
+    assert.equal(legacy.diagnostics.averager.climate, null)
+    assert.equal(legacy.diagnostics.averager.months.length, history.months.length)
+    assert.equal(A.view({ averager: legacy.diagnostics.averager, config }).climateYears, 10)
+    assert.deepEqual(A.view({ averager: legacy.diagnostics.averager, config }).koppen, climate.koppen)
     const trimmedAverager = A.saved({
         averager: history,
         climate: { months: climate.climateMonths, years: climate.climateYears },
@@ -106,5 +113,5 @@ try {
     const incomplete = { ...A.create(), months: history.months.filter((month) => month.year === 12) }
     assert.equal(A.view({ averager: incomplete, config }).climateYears, 0)
     assert.equal(A.view({ averager: incomplete, config }).koppen, null)
-    console.log("Ten-year monthly averaging, Csb→Cfb noise reduction, rolling years, partial-year exclusion, unchanged annual balance, extrema, worker mirroring, checkpoint round-trip, trimmed history with its saved climatology and the save estimate passed.")
+    console.log("Ten-year monthly averaging, Csb→Cfb noise reduction, rolling years, partial-year exclusion, unchanged annual balance, extrema, worker mirroring, checkpoint round-trip, previous-format loading, trimmed history with its saved climatology and the save estimate passed.")
 } finally { await server.close() }

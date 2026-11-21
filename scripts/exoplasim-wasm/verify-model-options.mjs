@@ -166,7 +166,9 @@ try {
             let rejectedMismatch = false
             try { GCM_CHECKPOINT.decode(mismatched) } catch { rejectedMismatch = true }
             check({ condition: rejectedMismatch, message: "Mismatched layer checkpoint accepted" })
-            const older = GCM_CHECKPOINT.encode({ ...restored, meta: { ...restored.meta, format: GCM_CHECKPOINT.FORMATS.cpu - 1 } })
+            const previous = GCM_CHECKPOINT.decode(GCM_CHECKPOINT.encode({ ...restored, meta: { ...restored.meta, format: 22 } }))
+            check({ condition: previous.meta.format === GCM_CHECKPOINT.FORMATS.cpu && previous.diagnostics.averager.climate === null && previous.diagnostics.snapshot.values.every((value, i) => value === snapshot.values[i]), message: "The previous checkpoint generation lost data" })
+            const older = GCM_CHECKPOINT.encode({ ...restored, meta: { ...restored.meta, format: 21 } })
 			let rejectedOlder = false
 			try { GCM_CHECKPOINT.decode(older) } catch (error) { rejectedOlder = error.message.includes("Unsupported checkpoint format") }
 			check({ condition: rejectedOlder, message: "An obsolete snapshot layout was accepted" })
