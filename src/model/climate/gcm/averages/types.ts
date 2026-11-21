@@ -19,6 +19,9 @@ export interface GcmAverager {
 	current: GcmMonthAccumulator | null
 	months: GcmMonthlyMean[]
 	years: GcmYearlyBalance[]
+	// The climatology of months a checkpoint dropped, standing in until the
+	// live months cover its years again.
+	climate: GcmClimatology | null
 }
 
 export interface GcmAveragerSample {
@@ -48,6 +51,13 @@ export interface GcmClimateCache {
 	pasta: Uint8Array | null
 }
 
+export interface GcmClimateMerge {
+	stored: GcmClimatology
+	live: GcmMonthlyMean[]
+	liveYears: number
+	olderYears: number
+}
+
 export interface GcmAverageMerge {
 	averager: GcmAverager
 	months: GcmMonthlyMean[]
@@ -63,4 +73,10 @@ export interface GcmMonthMerge {
 export interface GcmAveragesRequest {
 	averager: GcmAverager
 	config: GcmConfig
+}
+
+export interface GcmAveragerSave {
+	averager: GcmAverager
+	climate: GcmClimatology | null
+	years: number
 }

@@ -1,7 +1,9 @@
+import { GCM_AVERAGES } from "@/model/climate/gcm/averages"
 import type {
 	GcmCheckpoint,
 	GcmCheckpointArray,
 	GcmCheckpointMeta,
+	GcmCheckpointSizeRequest,
 } from "@/model/climate/gcm/checkpoint/types"
 import { GCM_FIELDS } from "@/model/climate/gcm/fields"
 import { GCM_GRID } from "@/model/climate/gcm/grid"
@@ -12,18 +14,21 @@ import { GCM_TERRAIN } from "@/model/climate/gcm/terrain"
 // File layout: magic, uint32 header length, JSON header, uint32 array bytes,
 // terrain and diagnostic arrays, then the unchanged plasim_status restart file.
 const MAGIC = "EXOPLASIM-CHECKPOINT\n"
-const FORMATS: Record<GcmEngine, number> = { cpu: 22, gpu: 23 }
+const FORMATS: Record<GcmEngine, number> = { cpu: 24, gpu: 25 }
 const GPU_PRECISION_BYTES = 4
 const HEADER_LENGTH_BYTES = 4
+// Measured JSON headers run 51-56 KB at T63 with 132 monthly means and up to
+// 232 years of annual balances. Over-estimating only warns earlier.
+const HEADER_ESTIMATE_BYTES = 64 * 1024
 
-function encode({
+function serialize({
 	meta,
 	restart,
 	diagnostics,
 	terrain,
-}: GcmCheckpoint): ArrayBuffer {
+}: GcmCheckpoint): Uint8Array<ArrayBuffer>[] {
 	const magic = new TextEncoder().encode(MAGIC)
-	const arrays: Uint8Array[] = []
+	const arrays: Uint8Array<ArrayBuffer>[] = []
 	let arrayBytes = 0
 	const header = new TextEncoder().encode(
 		JSON.stringify({ meta, diagnostics, terrain }, (...[, value]) => {
@@ -35,7 +40,12 @@ function encode({
 					bytes: value.byteLength,
 				}
 				arrays.push(
-					new Uint8Array(value.buffer, value.byteOffset, value.byteLength),
+					new Uint8Array(
+						// Saved fields always wrap a plain ArrayBuffer.
+						value.buffer as ArrayBuffer,
+						value.byteOffset,
+						value.byteLength,
+					),
 				)
 				arrayBytes += value.byteLength
 				return descriptor
@@ -43,25 +53,68 @@ function encode({
 			return value
 		}),
 	)
-	const bytes = new Uint8Array(
-		magic.length +
-			2 * HEADER_LENGTH_BYTES +
-			header.length +
-			arrayBytes +
-			restart.byteLength,
+	const prefix = new Uint8Array(
+		magic.length + HEADER_LENGTH_BYTES + header.length,
 	)
-	bytes.set(magic, 0)
-	new DataView(bytes.buffer).setUint32(magic.length, header.length, true)
-	bytes.set(header, magic.length + HEADER_LENGTH_BYTES)
-	let offset = magic.length + HEADER_LENGTH_BYTES + header.length
-	new DataView(bytes.buffer).setUint32(offset, arrayBytes, true)
-	offset += HEADER_LENGTH_BYTES
-	for (const array of arrays) {
-		bytes.set(array, offset)
-		offset += array.byteLength
+	prefix.set(magic, 0)
+	new DataView(prefix.buffer).setUint32(magic.length, header.length, true)
+	prefix.set(header, magic.length + HEADER_LENGTH_BYTES)
+	const lengths = new Uint8Array(HEADER_LENGTH_BYTES)
+	new DataView(lengths.buffer).setUint32(0, arrayBytes, true)
+	return [prefix, lengths, ...arrays, new Uint8Array(restart)]
+}
+
+function encode(checkpoint: GcmCheckpoint): ArrayBuffer {
+	const pieces = serialize(checkpoint)
+	const bytes = new Uint8Array(
+		pieces.reduce((total, piece) => total + piece.byteLength, 0),
+	)
+	let offset = 0
+	for (const piece of pieces) {
+		bytes.set(piece, offset)
+		offset += piece.byteLength
 	}
-	bytes.set(new Uint8Array(restart), offset)
 	return bytes.buffer
+}
+
+function size(checkpoint: GcmCheckpoint): number {
+	return serialize(checkpoint).reduce(
+		(total, piece) => total + piece.byteLength,
+		0,
+	)
+}
+
+// Blob parts are copied once into browser-managed storage, so a large export
+// never needs a second buffer its own size.
+function blob(checkpoint: GcmCheckpoint): Blob {
+	return new Blob(serialize(checkpoint))
+}
+
+// What a save of this resolution and history length will come to, for the
+// panel's estimate and its memory warning.
+function estimate({
+	config,
+	terrain,
+	historyYears,
+	restartBytes,
+}: GcmCheckpointSizeRequest): number {
+	const points = GCM_GRID.forTruncation(config.truncation).points
+	const snapshot = points * GCM_FIELDS.fieldCount(config.layers) * 4
+	const years = Math.max(
+		1,
+		Math.min(historyYears, GCM_AVERAGES.MAX_HISTORY_YEARS),
+	)
+	const monthlyMeans = years * GCM_AVERAGES.MONTHS_PER_YEAR
+	const climate =
+		years >= GCM_AVERAGES.CLIMATE_YEARS ? 0 : GCM_AVERAGES.MONTHS_PER_YEAR
+	return (
+		HEADER_ESTIMATE_BYTES +
+		terrain.width * terrain.height * 8 +
+		(monthlyMeans + climate) * snapshot +
+		// The live snapshot, the open month's last sample, and its Float64 sum.
+		4 * snapshot +
+		(restartBytes ?? 0)
+	)
 }
 
 function decode(buffer: ArrayBuffer): GcmCheckpoint {
@@ -123,12 +176,21 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 			config: meta.config,
 			state: diagnostics.targeting,
 		})
+	const averager = diagnostics.averager
+	const climate = averager.climate ?? null
+	if (
+		climate &&
+		(!Number.isInteger(climate.years) ||
+			climate.years < 1 ||
+			climate.years > GCM_AVERAGES.CLIMATE_YEARS ||
+			climate.months.length !== GCM_AVERAGES.MONTHS_PER_YEAR)
+	)
+		throw new Error("Invalid checkpoint climatology")
 	const snapshots = [
 		diagnostics.snapshot,
-		...diagnostics.averager.months.map((month) => month.snapshot),
-		...(diagnostics.averager.current
-			? [diagnostics.averager.current.last]
-			: []),
+		...averager.months.map((month) => month.snapshot),
+		...(averager.current ? [averager.current.last] : []),
+		...(climate ? climate.months.map((month) => month.snapshot) : []),
 	]
 	const points = GCM_GRID.forTruncation(meta.config.truncation).points
 	const expectedValues = points * GCM_FIELDS.fieldCount(meta.config.layers)
@@ -138,15 +200,14 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 				snapshot.layers !== meta.config.layers ||
 				snapshot.values.length !== expectedValues,
 		) ||
-		(diagnostics.averager.current &&
-			diagnostics.averager.current.sum.length !== expectedValues)
+		(averager.current && averager.current.sum.length !== expectedValues)
 	)
 		throw new Error(
 			"Checkpoint diagnostics do not match the saved model resolution and atmospheric layers",
 		)
 	return {
 		meta,
-		diagnostics,
+		diagnostics: { ...diagnostics, averager: { ...averager, climate } },
 		terrain: GCM_TERRAIN.validate(terrain),
 		restart: buffer.slice(restartStart),
 	}
@@ -166,6 +227,9 @@ export const GCM_CHECKPOINT = {
 	GPU_PRECISION_BYTES,
 	engine,
 	encode,
+	blob,
+	size,
+	estimate,
 	decode,
 	fileName,
 }

@@ -4,6 +4,7 @@ import { GCM_AVERAGES } from "@/model/climate/gcm/averages"
 import { GCM_BACKGROUND_AVERAGES } from "@/model/climate/gcm/averages/background"
 import type { GcmBackgroundAnalysis } from "@/model/climate/gcm/averages/background/types"
 import { GCM_CHECKPOINT } from "@/model/climate/gcm/checkpoint"
+import type { GcmCheckpoint } from "@/model/climate/gcm/checkpoint/types"
 import { GCM_CONTINUATION } from "@/model/climate/gcm/continuation"
 import type { GcmDownscaleGrid } from "@/model/climate/gcm/downscale/types"
 import { GCM_GRID } from "@/model/climate/gcm/grid"
@@ -24,10 +25,13 @@ import type { GcmConfig, GcmSnapshot } from "@/model/climate/gcm/types"
 import { GCM_DOWNLOAD } from "@/ui/gcm/download"
 import { GCM_LIVE } from "@/ui/gcm/live-store"
 import type {
+	GcmBrowserMemory,
 	GcmLaunchRequest,
 	GcmRunState,
+	GcmSaveWarning,
 	GcmStepSample,
 } from "@/ui/gcm/types"
+
 import { loadEarthRealElevation } from "@/ui/genesis/generation/earth-assets"
 import {
 	type CoastlineLineData,
@@ -43,6 +47,25 @@ const RATE_WINDOW_MS = 2000
 const DEV_MEASURE_CLEAR_MS = 10_000
 // Cap display-grid work at 720 × 360; retain smaller input rasters.
 const DISPLAY_HEIGHT = 360
+// One year of raw monthly fields is the smallest history that still shows a
+// full annual cycle in other software.
+const DEFAULT_HISTORY_YEARS = 1
+
+function exportCheckpoint(checkpoint: GcmCheckpoint): void {
+	GCM_DOWNLOAD.file({
+		name: GCM_CHECKPOINT.fileName(checkpoint.meta),
+		bytes: GCM_CHECKPOINT.blob(checkpoint),
+	})
+}
+
+// Chromium reports its heap bound; a browser without it gets no warning rather
+// than a guess. Buffers and blob storage can live outside that heap.
+function freeBytes(): number | null {
+	const memory = (performance as Performance & { memory?: GcmBrowserMemory })
+		.memory
+	if (!memory) return null
+	return Math.max(0, memory.jsHeapSizeLimit - memory.usedJSHeapSize)
+}
 
 const IDLE: GcmRunState = {
 	status: "idle",
@@ -78,6 +101,11 @@ export function useGcmRun() {
 	const [engine, setEngine] = useState<GcmEngine>("gpu")
 	const [gpuAvailable, setGpuAvailable] = useState<boolean | null>(null)
 	const [downscale, setDownscale] = useState<GcmDownscaleGrid | null>(null)
+	const [historyYears, setHistoryYearsState] = useState(DEFAULT_HISTORY_YEARS)
+	const [engineBytes, setEngineBytes] = useState<number | null>(null)
+	const [saveWarning, setSaveWarning] = useState<GcmSaveWarning | null>(null)
+	const historyYearsRef = useRef(historyYears)
+	const pendingSave = useRef<GcmCheckpoint | null>(null)
 	const [live] = useState(GCM_LIVE.create)
 	const analysis = useRef<GcmBackgroundAnalysis | null>(null)
 	const activeConfig = useRef(config)
@@ -151,6 +179,9 @@ export function useGcmRun() {
 			pendingConfig.current = null
 			activeConfig.current = request.config
 			setTargeting(request.diagnostics?.targeting ?? null)
+			setEngineBytes(request.restart?.byteLength ?? null)
+			pendingSave.current = null
+			setSaveWarning(null)
 			const currentGeneration = ++generation.current
 			preparation.current?.abort()
 			const controller = new AbortController()
@@ -295,19 +326,35 @@ export function useGcmRun() {
 								date: latest.date,
 								step: latest.step,
 							}
-							GCM_DOWNLOAD.file({
-								name: GCM_CHECKPOINT.fileName(meta),
-								bytes: GCM_CHECKPOINT.encode({
-									terrain: raster,
-									meta,
-									restart,
-									diagnostics: {
-										targeting: savedTargeting,
+							const climate = live.get().averages
+							const checkpoint = {
+								terrain: raster,
+								meta,
+								restart,
+								diagnostics: {
+									targeting: savedTargeting,
+									averager: GCM_AVERAGES.saved({
 										averager: saved,
-										snapshot: latest,
-									},
-								}),
-							})
+										climate: climate.climateMonths.length
+											? {
+													months: climate.climateMonths,
+													years: climate.climateYears,
+												}
+											: null,
+										years: historyYearsRef.current,
+									}),
+									snapshot: latest,
+								},
+							}
+							setEngineBytes(restart.byteLength)
+							const bytes = GCM_CHECKPOINT.size(checkpoint)
+							const available = freeBytes()
+							if (available !== null && bytes > available) {
+								pendingSave.current = checkpoint
+								setSaveWarning({ bytes, available })
+								return
+							}
+							exportCheckpoint(checkpoint)
 						}
 					},
 				})
@@ -401,11 +448,37 @@ export function useGcmRun() {
 		run.current?.stop()
 		run.current = null
 		rate.current = null
+		pendingSave.current = null
+		setSaveWarning(null)
+		setEngineBytes(null)
 		live.update(GCM_LIVE.EMPTY)
 		setDownscale(null)
 		setState(IDLE)
 		setTargeting(null)
 	}
+
+	const savePlan = useMemo(() => {
+		const raster = terrain ?? earthTerrain
+		const bytes = raster
+			? GCM_CHECKPOINT.estimate({
+					config,
+					terrain: raster,
+					historyYears,
+					restartBytes: engineBytes,
+				})
+			: 0
+		const available = freeBytes()
+		return {
+			bytes,
+			warning:
+				bytes > 0 &&
+				engineBytes !== null &&
+				available !== null &&
+				bytes > available
+					? { bytes, available }
+					: null,
+		}
+	}, [config, terrain, earthTerrain, historyYears, engineBytes])
 
 	return {
 		targeting,
@@ -506,5 +579,32 @@ export function useGcmRun() {
 			}
 		},
 		save: () => run.current?.checkpoint(),
+		historyYears,
+		setHistoryYears: (years: number) => {
+			if (!Number.isFinite(years)) return
+			const next = Math.min(
+				GCM_AVERAGES.MAX_HISTORY_YEARS,
+				Math.max(1, Math.round(years)),
+			)
+			if (next === historyYearsRef.current) return
+			historyYearsRef.current = next
+			pendingSave.current = null
+			setSaveWarning(null)
+			setHistoryYearsState(next)
+		},
+		saveEstimate: savePlan.bytes,
+		saveEstimateIncludesState: engineBytes !== null,
+		saveEstimateWarning: savePlan.warning,
+		saveWarning,
+		confirmSave: () => {
+			const checkpoint = pendingSave.current
+			pendingSave.current = null
+			setSaveWarning(null)
+			if (checkpoint) exportCheckpoint(checkpoint)
+		},
+		cancelSave: () => {
+			pendingSave.current = null
+			setSaveWarning(null)
+		},
 	}
 }

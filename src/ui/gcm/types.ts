@@ -385,6 +385,17 @@ export interface GcmDownload {
 	bytes: ArrayBuffer | Blob
 }
 
+// Chromium's non-standard heap report; other browsers leave it undefined.
+export interface GcmBrowserMemory {
+	jsHeapSizeLimit: number
+	usedJSHeapSize: number
+}
+
+export interface GcmSaveWarning {
+	bytes: number
+	available: number
+}
+
 export interface GcmWorkerOption {
 	value: string
 	label: string

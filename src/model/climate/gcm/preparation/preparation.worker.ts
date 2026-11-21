@@ -25,6 +25,9 @@ self.onmessage = async ({ data }: MessageEvent<GcmPreparationMessage>) => {
 				...diagnostics.averager.months.map(
 					({ snapshot }) => snapshot.values.buffer,
 				),
+				...(diagnostics.averager.climate?.months.map(
+					({ snapshot }) => snapshot.values.buffer,
+				) ?? []),
 				...averages.climateMonths.map(({ snapshot }) => snapshot.values.buffer),
 			])
 			const current = diagnostics.averager.current

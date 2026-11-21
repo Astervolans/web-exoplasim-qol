@@ -14,6 +14,7 @@ import { Button } from "@/ui/components/primitives/Button"
 import { ContinuousLegend } from "@/ui/components/primitives/charts/ContinuousLegend"
 import { IconButton } from "@/ui/components/primitives/IconButton"
 import { DetailsIcon } from "@/ui/components/primitives/icons/DetailsIcon"
+import { LabeledSlider } from "@/ui/components/primitives/LabeledSlider"
 import { LabeledValueRow } from "@/ui/components/primitives/LabeledValueRow"
 import { LanguageToggle } from "@/ui/components/primitives/LanguageToggle"
 import { SegmentedControl } from "@/ui/components/primitives/SegmentedControl"
@@ -41,7 +42,11 @@ import type {
 import { useGcmClimate } from "@/ui/gcm/useGcmClimate"
 import { useGcmRun } from "@/ui/gcm/useGcmRun"
 import { GCM_ZONE_CIRCLES } from "@/ui/gcm/zone-circles"
-import { rgbToCss, type UnitSystem } from "@/ui/genesis/shared/ui-format"
+import {
+	formatBytes,
+	rgbToCss,
+	type UnitSystem,
+} from "@/ui/genesis/shared/ui-format"
 import { I18N } from "@/ui/i18n"
 
 const UNIT_OPTIONS = [
@@ -144,6 +149,7 @@ export function GcmView() {
 		status === "paused" ||
 		status === "checkpointing"
 	const checkpointFile = useRef<HTMLInputElement>(null)
+	const saveWarning = gcm.saveWarning ?? gcm.saveEstimateWarning
 	const { averages, snapshot: latest } = GCM_LIVE.useLive(gcm.live)
 	const climate = averages[scheme]
 	const selection = GCM_PERIOD_VIEW.select({
@@ -658,6 +664,68 @@ export function GcmView() {
 							}}
 						/>
 					</div>
+					{active && (
+						<div className="mt-3 space-y-1">
+							<LabeledSlider
+								label={I18N.t("Saved history")}
+								help={I18N.t(
+									"Months of monthly means a checkpoint keeps as raw fields, for analysis in other software. The climatology of the years beyond them is saved too, so climate maps and classifications survive a reload.",
+								)}
+								value={
+									gcm.historyYears === 1
+										? I18N.t("1 year")
+										: I18N.t("{years} years", { years: gcm.historyYears })
+								}
+								numericValue={gcm.historyYears}
+								min={1}
+								max={GCM_AVERAGES.MAX_HISTORY_YEARS}
+								step={1}
+								onChange={gcm.setHistoryYears}
+							/>
+							{saveWarning ? (
+								<div
+									className={cx(
+										uiTokens.warning.panel,
+										uiTokens.warning.text,
+										uiTokens.radius.sm,
+										"space-y-1",
+									)}
+								>
+									<p>
+										{I18N.t(
+											"This export needs about {size}, which may exceed the {free} the browser can still allocate.",
+											{
+												size: formatBytes(saveWarning.bytes),
+												free: formatBytes(saveWarning.available),
+											},
+										)}
+									</p>
+									{gcm.saveWarning && (
+										<div className="flex flex-wrap gap-2">
+											<Button onClick={gcm.confirmSave}>
+												{I18N.t("Export anyway")}
+											</Button>
+											<Button onClick={gcm.cancelSave}>
+												{I18N.t("Cancel")}
+											</Button>
+										</div>
+									)}
+								</div>
+							) : (
+								gcm.saveEstimate > 0 && (
+									<p className={uiTokens.field.note}>
+										{gcm.saveEstimateIncludesState
+											? I18N.t("Estimated file ≈ {size}", {
+													size: formatBytes(gcm.saveEstimate),
+												})
+											: I18N.t("Estimated file ≈ {size} plus the model state", {
+													size: formatBytes(gcm.saveEstimate),
+												})}
+									</p>
+								)
+							)}
+						</div>
+					)}
 					<div className="mt-3 space-y-1">
 						<LabeledValueRow
 							label={I18N.t("Status")}
