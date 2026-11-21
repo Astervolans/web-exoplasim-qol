@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, dsh-checkpoint-history]
   workflow_dispatch:
 
 permissions:
@@ -12,11 +12,33 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# The site root is the stable build from main. The branch named here is built
+# next to it under /preview/; once the branch is gone the preview stops being
+# published and the root keeps deploying on its own.
+env:
+  PREVIEW_BRANCH: dsh-checkpoint-history
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+      - name: Look for the preview branch
+        id: preview
+        run: |
+          if git -C stable ls-remote --exit-code --heads origin "$PREVIEW_BRANCH" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.preview.outputs.exists == 'true'
+        with:
+          ref: ${{ env.PREVIEW_BRANCH }}
+          path: preview
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -24,18 +46,34 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: stable/pnpm-lock.yaml
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-        env:
-          VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
-      - name: Add direct route entry point
-        run: cp dist/index.html dist/gcm/index.html
+      - name: Build stable
+        working-directory: stable
+        run: |
+          pnpm install --frozen-lockfile
+          VITE_BASE_PATH="${{ steps.pages.outputs.base_path }}/" pnpm build
+          cp dist/index.html dist/gcm/index.html
+      - name: Build preview
+        if: steps.preview.outputs.exists == 'true'
+        working-directory: preview
+        run: |
+          pnpm install --frozen-lockfile
+          VITE_BASE_PATH="${{ steps.pages.outputs.base_path }}/preview/" pnpm build
+          cp dist/index.html dist/gcm/index.html
+      - name: Assemble the site
+        run: |
+          mkdir -p site
+          cp -R stable/dist/. site/
+          if [ -d preview/dist ]; then
+            mkdir -p site/preview
+            cp -R preview/dist/. site/preview/
+          fi
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
