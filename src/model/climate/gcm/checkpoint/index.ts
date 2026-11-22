@@ -14,7 +14,16 @@ import { GCM_TERRAIN } from "@/model/climate/gcm/terrain"
 // File layout: magic, uint32 header length, JSON header, uint32 array bytes,
 // terrain and diagnostic arrays, then the unchanged plasim_status restart file.
 const MAGIC = "EXOPLASIM-CHECKPOINT\n"
-const FORMATS: Record<GcmEngine, number> = { cpu: 25, gpu: 26 }
+const FORMATS: Record<GcmEngine, number> = { cpu: 27, gpu: 28 }
+// Formats restored exactly: 22/23 differ from 24/25 only by the climatology a
+// trimmed save adds, which they simply lack; 24/25 carry everything 27/28 do
+// except the two ocean-current planes, which load as zero until the next
+// snapshot. Older files carry no terrain orientation and no star inputs, so
+// they cannot be restored faithfully.
+const READABLE: Record<GcmEngine, ReadonlyArray<number>> = {
+	cpu: [FORMATS.cpu, 24],
+	gpu: [FORMATS.gpu, 25],
+}
 // The snapshot carries the two ocean-current planes after the model's fields.
 const SNAPSHOT_CURRENT_PLANES = 2
 const GPU_PRECISION_BYTES = 4
@@ -22,6 +31,12 @@ const HEADER_LENGTH_BYTES = 4
 // Measured JSON headers run 51-56 KB at T63 with 132 monthly means and up to
 // 232 years of annual balances. Over-estimating only warns earlier.
 const HEADER_ESTIMATE_BYTES = 64 * 1024
+
+function savedEngine(format: number): GcmEngine | null {
+	if (READABLE.cpu.includes(format)) return "cpu"
+	if (READABLE.gpu.includes(format)) return "gpu"
+	return null
+}
 
 function serialize({
 	meta,
@@ -141,12 +156,14 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 		bytes.subarray(headerStart, headerEnd),
 	)
 	const parsed = JSON.parse(header)
-	const meta = parsed.meta as GcmCheckpointMeta
-	if (!Object.values(FORMATS).includes(meta.format)) {
+	const saved = savedEngine(parsed.meta.format)
+	if (!saved)
 		throw new Error(
-			`Unsupported checkpoint format ${meta.format}. Format ${FORMATS.cpu} (CPU) or ${FORMATS.gpu} (GPU) is required.`,
+			`Unsupported checkpoint format ${parsed.meta.format}. This build loads formats 22 to 28.`,
 		)
-	}
+	// Older but restorable files become current ones, so a re-save writes the
+	// current format.
+	const meta = { ...parsed.meta, format: FORMATS[saved] } as GcmCheckpointMeta
 	const arrayBytes = new DataView(buffer).getUint32(headerEnd, true)
 	const arrayStart = headerEnd + HEADER_LENGTH_BYTES
 	const restartStart = arrayStart + arrayBytes
@@ -199,11 +216,16 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 	]
 	const points = GCM_GRID.forTruncation(meta.config.truncation).points
 	const expectedValues = points * GCM_FIELDS.fieldCount(meta.config.layers)
+	// Formats before the current planes have none; the layer reads as still
+	// water until the resumed run publishes its first snapshot.
+	const expectedCurrents = points * SNAPSHOT_CURRENT_PLANES
 	if (
 		snapshots.some(
 			(snapshot) =>
 				snapshot.layers !== meta.config.layers ||
-				snapshot.values.length !== expectedValues,
+				snapshot.values.length !== expectedValues ||
+				(snapshot.currents !== undefined &&
+					snapshot.currents.length !== expectedCurrents),
 		) ||
 		(averager.current && averager.current.sum.length !== expectedValues)
 	)
@@ -219,7 +241,7 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 }
 
 function engine(meta: GcmCheckpointMeta): GcmEngine {
-	return meta.format === FORMATS.gpu ? "gpu" : "cpu"
+	return savedEngine(meta.format) ?? "cpu"
 }
 
 function fileName(meta: GcmCheckpointMeta): string {

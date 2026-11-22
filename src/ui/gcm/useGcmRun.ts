@@ -28,7 +28,8 @@ import type {
 	GcmBrowserMemory,
 	GcmLaunchRequest,
 	GcmRunState,
-	GcmSaveWarning,
+	GcmSaveDialogState,
+	GcmSaveEstimate,
 	GcmStepSample,
 } from "@/ui/gcm/types"
 
@@ -101,10 +102,9 @@ export function useGcmRun() {
 	const [engine, setEngine] = useState<GcmEngine>("gpu")
 	const [gpuAvailable, setGpuAvailable] = useState<boolean | null>(null)
 	const [downscale, setDownscale] = useState<GcmDownscaleGrid | null>(null)
-	const [historyYears, setHistoryYearsState] = useState(DEFAULT_HISTORY_YEARS)
 	const [engineBytes, setEngineBytes] = useState<number | null>(null)
-	const [saveWarning, setSaveWarning] = useState<GcmSaveWarning | null>(null)
-	const historyYearsRef = useRef(historyYears)
+	const [saveDialog, setSaveDialog] = useState<GcmSaveDialogState | null>(null)
+	const saveYears = useRef(DEFAULT_HISTORY_YEARS)
 	const pendingSave = useRef<GcmCheckpoint | null>(null)
 	const [live] = useState(GCM_LIVE.create)
 	const analysis = useRef<GcmBackgroundAnalysis | null>(null)
@@ -181,7 +181,7 @@ export function useGcmRun() {
 			setTargeting(request.diagnostics?.targeting ?? null)
 			setEngineBytes(request.restart?.byteLength ?? null)
 			pendingSave.current = null
-			setSaveWarning(null)
+			setSaveDialog(null)
 			const currentGeneration = ++generation.current
 			preparation.current?.abort()
 			const controller = new AbortController()
@@ -341,7 +341,7 @@ export function useGcmRun() {
 													years: climate.climateYears,
 												}
 											: null,
-										years: historyYearsRef.current,
+										years: saveYears.current,
 									}),
 									snapshot: latest,
 								},
@@ -351,7 +351,12 @@ export function useGcmRun() {
 							const available = freeBytes()
 							if (available !== null && bytes > available) {
 								pendingSave.current = checkpoint
-								setSaveWarning({ bytes, available })
+								setSaveDialog({
+									mode: "confirm",
+									years: saveYears.current,
+									bytes,
+									available,
+								})
 								return
 							}
 							exportCheckpoint(checkpoint)
@@ -449,7 +454,7 @@ export function useGcmRun() {
 		run.current = null
 		rate.current = null
 		pendingSave.current = null
-		setSaveWarning(null)
+		setSaveDialog(null)
 		setEngineBytes(null)
 		live.update(GCM_LIVE.EMPTY)
 		setDownscale(null)
@@ -457,28 +462,21 @@ export function useGcmRun() {
 		setTargeting(null)
 	}
 
-	const savePlan = useMemo(() => {
+	const saveEstimate = (years: number): GcmSaveEstimate => {
 		const raster = terrain ?? earthTerrain
-		const bytes = raster
-			? GCM_CHECKPOINT.estimate({
-					config,
-					terrain: raster,
-					historyYears,
-					restartBytes: engineBytes,
-				})
-			: 0
-		const available = freeBytes()
 		return {
-			bytes,
-			warning:
-				bytes > 0 &&
-				engineBytes !== null &&
-				available !== null &&
-				bytes > available
-					? { bytes, available }
-					: null,
+			bytes: raster
+				? GCM_CHECKPOINT.estimate({
+						config,
+						terrain: raster,
+						historyYears: years,
+						restartBytes: engineBytes,
+					})
+				: 0,
+			available: freeBytes(),
+			includesState: engineBytes !== null,
 		}
-	}, [config, terrain, earthTerrain, historyYears, engineBytes])
+	}
 
 	return {
 		targeting,
@@ -578,33 +576,36 @@ export function useGcmRun() {
 				}))
 			}
 		},
-		save: () => run.current?.checkpoint(),
-		historyYears,
-		setHistoryYears: (years: number) => {
-			if (!Number.isFinite(years)) return
-			const next = Math.min(
-				GCM_AVERAGES.MAX_HISTORY_YEARS,
-				Math.max(1, Math.round(years)),
-			)
-			if (next === historyYearsRef.current) return
-			historyYearsRef.current = next
-			pendingSave.current = null
-			setSaveWarning(null)
-			setHistoryYearsState(next)
+		save: () => {
+			if (!run.current) return
+			setSaveDialog({ mode: "choose", years: DEFAULT_HISTORY_YEARS })
 		},
-		saveEstimate: savePlan.bytes,
-		saveEstimateIncludesState: engineBytes !== null,
-		saveEstimateWarning: savePlan.warning,
-		saveWarning,
+		saveDialog,
+		saveEstimate,
+		setSaveYears: (years: number) => {
+			const next = Math.max(
+				1,
+				Math.min(GCM_AVERAGES.MAX_HISTORY_YEARS, Math.round(years)),
+			)
+			setSaveDialog((current) =>
+				current?.mode === "choose" ? { ...current, years: next } : current,
+			)
+		},
 		confirmSave: () => {
+			if (saveDialog?.mode === "choose") {
+				saveYears.current = saveDialog.years
+				setSaveDialog(null)
+				run.current?.checkpoint()
+				return
+			}
 			const checkpoint = pendingSave.current
 			pendingSave.current = null
-			setSaveWarning(null)
+			setSaveDialog(null)
 			if (checkpoint) exportCheckpoint(checkpoint)
 		},
 		cancelSave: () => {
 			pendingSave.current = null
-			setSaveWarning(null)
+			setSaveDialog(null)
 		},
 	}
 }

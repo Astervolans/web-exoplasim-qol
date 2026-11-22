@@ -24,7 +24,7 @@ Both engines support the shared Storm climatology toggle and nine diagnostic map
 
 ## Checkpoints
 
-CPU uses checkpoint format 22; GPU uses format 23 with main's terrain (including its map orientation), layer metadata, climate averages and field validation. Both restarts carry glacier snow persistence ([Glacier lifecycle](exoplasim-glaciers.md)). The GPU restart includes the complete model state and temperature-tracking arrays, preserving partial output windows and publication intervals across save/load. Earlier formats are rejected. Loading selects the engine that saved the checkpoint.
+CPU uses checkpoint format 27; GPU uses format 28 with main's terrain (including its map orientation), layer metadata, climate averages, the two ocean-current planes of each snapshot and field validation. Files from formats 22 to 25 still load, with the current planes zero until the resumed run publishes again. Both restarts carry glacier snow persistence ([Glacier lifecycle](exoplasim-glaciers.md)). The GPU restart includes the complete model state and temperature-tracking arrays, preserving partial output windows and publication intervals across save/load. Earlier formats are rejected. Loading selects the engine that saved the checkpoint.
 
 ## Verification
 

@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useState } from "react"
 
 import { cx } from "@/ui/components/lib"
 
 import { Button } from "@/ui/components/primitives/Button"
+import { Dialog } from "@/ui/components/primitives/Dialog"
 
 import { FilePicker } from "@/ui/components/primitives/FilePicker"
 
@@ -41,18 +42,14 @@ export function TerrainPanel({
 	const upload = useTerrainImport()
 
 	const readTerrain = useCallback(() => upload.terrain, [upload.terrain])
-	const dialog = useRef<HTMLDialogElement>(null)
+	const [open, setOpen] = useState(false)
 	const [emptyElevation, setEmptyElevation] = useState(false)
 	const elevationFactor = unitSystem === "imperial" ? KM_TO_FT / 1000 : 1
 
 	return (
 		<div className="min-w-0 space-y-2">
 			<div className={uiTokens.field.actions}>
-				<Button
-					size="md"
-					disabled={disabled}
-					onClick={() => dialog.current?.showModal()}
-				>
+				<Button size="md" disabled={disabled} onClick={() => setOpen(true)}>
 					{I18N.t("Import terrain")}
 				</Button>
 				<Button
@@ -63,27 +60,12 @@ export function TerrainPanel({
 					{I18N.t("Use Earth")}
 				</Button>
 			</div>
-			<dialog
-				ref={dialog}
-				aria-labelledby="terrain-import-title"
-				className={cx(
-					"m-auto max-h-[90vh] w-[min(36rem,95vw)] overflow-y-auto p-4",
-					uiTokens.surface.panel,
-					uiTokens.radius.md,
-					uiTokens.shadow.lg,
-				)}
+			<Dialog
+				open={open}
+				title={I18N.t("Import terrain")}
+				titleId="terrain-import-title"
+				onClose={() => setOpen(false)}
 			>
-				<div className="mb-3 flex items-center justify-between gap-2">
-					<h2 id="terrain-import-title" className={uiTokens.type.title}>
-						{I18N.t("Import terrain")}
-					</h2>
-					<Button
-						onClick={() => dialog.current?.close()}
-						aria-label={I18N.t("Close terrain import")}
-					>
-						{I18N.t("Close")}
-					</Button>
-				</div>
 				<fieldset disabled={disabled || upload.busy} className="space-y-2">
 					<FilePicker
 						label={I18N.t("Heightmap")}
@@ -284,13 +266,13 @@ export function TerrainPanel({
 						}
 						onClick={() => {
 							onChange(upload.terrain)
-							dialog.current?.close()
+							setOpen(false)
 						}}
 					>
 						{I18N.t("Apply terrain")}
 					</Button>
 				</div>
-			</dialog>
+			</Dialog>
 		</div>
 	)
 }
