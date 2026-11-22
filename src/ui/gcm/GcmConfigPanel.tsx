@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
+import { GCM } from "@/model/climate/gcm"
 import { GCM_CONTINUATION } from "@/model/climate/gcm/continuation"
 import { GCM_SYSTEM } from "@/model/climate/gcm/system"
 import type {
@@ -54,6 +55,15 @@ const OCEAN_DEPTH_SLIDER: GcmSliderSpec = {
 	max: 200,
 	step: 1,
 	unit: "m",
+	digits: 0,
+}
+const OCEAN_DIFFUSIVITY_SLIDER: GcmSliderSpec = {
+	key: "oceanDiffusivityM2S",
+	label: "Ocean heat transport",
+	min: 0,
+	max: GCM.OCEAN_DIFFUSIVITY_MAX_M2S,
+	step: 5000,
+	unit: "m²/s",
 	digits: 0,
 }
 const GROWTH_SLIDER: GcmSliderSpec = {
@@ -414,6 +424,7 @@ export function GcmConfigPanel({
 		surface: (
 			<>
 				{renderSlider(OCEAN_DEPTH_SLIDER)}
+				{renderSlider(OCEAN_DIFFUSIVITY_SLIDER)}
 				<fieldset disabled={disabled || locked} className="space-y-1">
 					<span className={label}>
 						<InputLabel

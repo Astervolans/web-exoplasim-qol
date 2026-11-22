@@ -26,6 +26,7 @@ const SECTION_KEYS: Record<
 	atmosphere: ["atmosphere", "targetTemperatureK"],
 	surface: [
 		"oceanDepthM",
+		"oceanDiffusivityM2S",
 		"vegetation",
 		"initialGrowth",
 		"wetSoil",

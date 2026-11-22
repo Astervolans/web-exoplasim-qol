@@ -110,6 +110,13 @@ export interface GcmIceConstants {
 export interface GcmOceanConstants {
 	DTMIX: number
 	CPS: number
+	// hdiffo's hdiffk: the mixed layer's heat diffusivity (m²/s), zero while
+	// nhdiff is off.
+	HCOND: number
+	// 1 when the wind-driven current diagnostic runs (GPU engine only).
+	CURRENTS: number
+	// The planet's angular velocity (rad/s), which sets the Coriolis parameter.
+	OMEGA: number
 }
 
 export interface GcmSeaConstants {

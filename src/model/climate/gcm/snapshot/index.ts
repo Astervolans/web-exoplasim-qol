@@ -10,13 +10,17 @@ import { GPU_MATH } from "@/model/shared/gpu/math"
 
 // gcm_publish.f90's jet level: the full level nearest sigma 0.25.
 const JET_SIGMA = 0.25
+// The ocean currents' u and v planes, packed after the published fields.
+const CURRENT_PLANES = 2
 
+// The published fields plus the two ocean-current planes, which only the GPU
+// engine fills; gcm_publish.f90's array stops at the published fields.
 function fields(levels: number): GcmFieldSpec[] {
 	return [
 		{
 			name: "snapshot",
 			shape: "grid",
-			count: GCM_FIELDS.fieldCount(levels as GcmLayerCount),
+			count: GCM_FIELDS.fieldCount(levels as GcmLayerCount) + CURRENT_PLANES,
 		},
 		{ name: "snapshot_tracking", shape: "grid", count: 9 },
 		{ name: "snapshot_step", shape: "table", count: 3 },
@@ -49,6 +53,9 @@ function kernel({
 			RA4: humidity.ra4,
 			TMELT: humidity.tmelt,
 			MOIST: 1 / humidity.rdbrv - 1,
+			FIELDS: GCM_FIELDS.fieldCount(
+				context.state.dimensions.levels as GcmLayerCount,
+			),
 		},
 	})
 }

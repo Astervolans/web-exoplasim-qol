@@ -2,6 +2,7 @@
 // reserved zero slots and are unavailable in GPU map controls.
 override JET: u32;
 override SIGMA: f32;
+override FIELDS: u32;
 
 // ExoPlaSim's postprocessor: hfns = snow melt * L_TIMES_RHOH2O + rss + rls
 // + hfss + hfls (pyburn.py).
@@ -104,4 +105,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 	let lowest = NLEV - 1u;
 	let qsat = saturation_divided(state[at(DT, lowest, h)], state[DP + h] * SIGMA);
 	put(51u + 5u * lowest + 3u, h, max(0.0, state[at(DQ, lowest, h)]) / max(1.17549435e-38, qsat));
+	// The ocean currents ride after the published fields: the GPU engine's
+	// wind-driven surface velocity, zero wherever the ocean model is off.
+	put(FIELDS, h, state[OCEAN_U + h]);
+	put(FIELDS + 1u, h, state[OCEAN_V + h]);
 }

@@ -72,6 +72,7 @@ const NORMALIZED_SCALES: Partial<Record<GcmMapMode, GcmColorScale>> = {
 	soilWater: stops(COLOR_PALETTES.bupuStops),
 	albedo: stops(COLOR_PALETTES.orangesStops),
 	outgoingLongwave: stops(COLOR_PALETTES.ylOrRdStops),
+	oceanCurrent: stops(COLOR_PALETTES.bupuStops),
 }
 
 function color({ mode, value }: GcmModeValue): RgbColor {

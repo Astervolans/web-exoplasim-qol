@@ -1,3 +1,4 @@
+import { GCM } from "@/model/climate/gcm"
 import { GCM_ATMOSPHERE } from "@/model/climate/gcm/atmosphere"
 import type {
 	GcmNamelistApplication,
@@ -156,6 +157,14 @@ function edits(config: GcmConfig): GcmNamelistEdits {
 			DSNOWALB: bands,
 		})
 	}
+	if (
+		!Number.isFinite(config.oceanDiffusivityM2S) ||
+		config.oceanDiffusivityM2S < 0 ||
+		config.oceanDiffusivityM2S > GCM.OCEAN_DIFFUSIVITY_MAX_M2S
+	)
+		throw new Error(
+			`Ocean heat diffusivity must be between 0 and ${GCM.OCEAN_DIFFUSIVITY_MAX_M2S} m²/s`,
+		)
 	return {
 		planet_namelist: planet,
 		plasim_namelist: plasim,

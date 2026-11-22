@@ -14,7 +14,9 @@ import { GCM_TERRAIN } from "@/model/climate/gcm/terrain"
 // File layout: magic, uint32 header length, JSON header, uint32 array bytes,
 // terrain and diagnostic arrays, then the unchanged plasim_status restart file.
 const MAGIC = "EXOPLASIM-CHECKPOINT\n"
-const FORMATS: Record<GcmEngine, number> = { cpu: 24, gpu: 25 }
+const FORMATS: Record<GcmEngine, number> = { cpu: 25, gpu: 26 }
+// The snapshot carries the two ocean-current planes after the model's fields.
+const SNAPSHOT_CURRENT_PLANES = 2
 const GPU_PRECISION_BYTES = 4
 const HEADER_LENGTH_BYTES = 4
 // Measured JSON headers run 51-56 KB at T63 with 132 monthly means and up to
@@ -99,7 +101,10 @@ function estimate({
 	restartBytes,
 }: GcmCheckpointSizeRequest): number {
 	const points = GCM_GRID.forTruncation(config.truncation).points
-	const snapshot = points * GCM_FIELDS.fieldCount(config.layers) * 4
+	const snapshot =
+		points *
+		(GCM_FIELDS.fieldCount(config.layers) + SNAPSHOT_CURRENT_PLANES) *
+		4
 	const years = Math.max(
 		1,
 		Math.min(historyYears, GCM_AVERAGES.MAX_HISTORY_YEARS),

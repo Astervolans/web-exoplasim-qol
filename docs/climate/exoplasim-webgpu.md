@@ -501,7 +501,9 @@ Over every deep-convection column (956 at T21 step 100, 911 at step 2000), the f
 Switch values let the coupling reduce exactly:
 - `ncpl_atmos_ice = ncpl_ice_ocean = 1`: seamod's and icemod's accumulators each hold one step and divide by 1, so the fluxes pass straight through.
 - `noutput = 0`: the `x…a` and `y…a` output means, and the forcing copies only the LSG ocean reads, are left out.
-- Single ocean layer, `nhdiff = 0`, `nlsg = 0`.
+- Single ocean layer, `nlsg = 0`. The page's two ocean features are additions to this pipeline, and both run after the sea kernel that computes the step's wind stress.
+
+When the panel's mixed-layer diffusivity is non-zero, `SURFACE.kernels` appends that many explicit sub-steps of `ocean/wgsl/transport.wgsl`, alternating two state slots so each sub-step is a Jacobi iteration over the previous field; the count comes from the explicit stability bound at the polar row (2 at T21, up to 54 at T63). When the currents layer is enabled, one dispatch of `ocean/wgsl/current.wgsl` computes the mixed layer's Ekman drift from the wind stress, and `snapshot/wgsl/pack.wgsl` publishes it as two planes after the model's fields. The two together cost 0.5–4.6% of a step across the six measured configurations; operator, literature, verification and the benchmark table are in [Ocean heat transport and wind-driven currents](ocean-circulation.md).
 
 Like Fortran, `icestep` runs on every point, with zero fluxes on land. `glacierstep`'s `persistflag` only feeds the annual glacier update, which is not ported yet.
 

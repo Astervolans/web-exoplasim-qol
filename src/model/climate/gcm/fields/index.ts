@@ -5,6 +5,7 @@ import type {
 	GcmFieldRequest,
 	GcmLevel,
 	GcmMapMode,
+	GcmModeAvailability,
 	GcmModeDefinition,
 	GcmModeRequest,
 	GcmScaling,
@@ -138,6 +139,18 @@ const GRAMS_PER_DAY_PER_KILOGRAM_PER_SECOND = 86400 * 1000
 // Fixed display ranges keep colors stable while the model spins up.
 const MODES: ReadonlyArray<GcmModeDefinition> = [
 	...STORM_MODES,
+
+	{
+		mode: "oceanCurrent",
+		label: "Ocean currents",
+		unit: "metersPerSecond",
+		min: 0,
+		// The Ekman drift of a 50 m layer is a few centimetres per second at
+		// mid-latitudes and saturates near the equator, where the Coriolis
+		// parameter is held at its 5° value; the arrows fill at 5 cm/s so the
+		// mid-latitude bands are visible.
+		max: 0.05,
+	},
 
 	{
 		mode: "netPrimaryProduction",
@@ -427,7 +440,16 @@ function grid(snapshot: GcmSnapshot): GcmGrid {
 	)
 }
 
+// The ocean currents ride after the published fields, one u and one v plane.
+function currentPlane({ snapshot, field: id }: GcmFieldRequest): Float32Array {
+	const { points } = grid(snapshot)
+	const start = id === "oceanCurrentU" ? 0 : points
+	return snapshot.currents.subarray(start, start + points)
+}
+
 function field({ snapshot, field: id }: GcmFieldRequest): Float32Array {
+	if (id === "oceanCurrentU" || id === "oceanCurrentV")
+		return currentPlane({ snapshot, field: id })
 	const { points } = grid(snapshot)
 	const index = ORDER.indexOf(id)
 	if (index < 0 || index >= fieldCount(snapshot.layers))
@@ -466,6 +488,12 @@ function vectors(request: GcmModeRequest): GcmVectorField | null {
 			v: field({ snapshot, field: "jetV" }),
 		}
 	}
+	if (mode === "oceanCurrent") {
+		return {
+			u: field({ snapshot, field: "oceanCurrentU" }),
+			v: field({ snapshot, field: "oceanCurrentV" }),
+		}
+	}
 	return null
 }
 
@@ -501,6 +529,8 @@ function values(request: GcmModeRequest): Float32Array {
 			return mapScaled({ values: read(mode), scale: 1, offset: -KELVIN_OFFSET })
 		case "wind":
 		case "jet":
+			return speed(vectors(request) as GcmVectorField)
+		case "oceanCurrent":
 			return speed(vectors(request) as GcmVectorField)
 		case "relativeHumidity":
 			return mapScaled({
@@ -564,11 +594,23 @@ function gpuSupports(mode: GcmMapMode): boolean {
 	return mode !== "seaLevelPressure" && layer(mode)?.variable !== "Humidity"
 }
 
+// The CPU engine's Fortran model has no current diagnostic, so the layer would
+// be blank there; the GPU engine draws everything it ports.
+function available({ mode, engine }: GcmModeAvailability): boolean {
+	if (engine === "cpu") return mode !== "oceanCurrent"
+	return gpuSupports(mode)
+}
+
 export const GCM_FIELDS = {
 	stormMode(mode: string): boolean {
 		return STORM_MODES.some((definition) => definition.mode === mode)
 	},
-	gpuSupports,
+	available,
+	// The views GCM_FIELDS.available judges: elevation, Köppen and Pasta are
+	// derived on the page and exist for both engines.
+	isFieldView(view: string): view is GcmMapMode {
+		return view !== "elevation" && view !== "koppen" && view !== "pasta"
+	},
 	fieldCount,
 	levels,
 	layer,

@@ -4,6 +4,7 @@ import { CALENDAR } from "@/model/climate/gcm/calendar"
 import { RESTART } from "@/model/climate/gcm/checkpoint/restart"
 import { GCM_CONTINUATION } from "@/model/climate/gcm/continuation"
 import { GCM_DEVICE } from "@/model/climate/gcm/device"
+import { GCM_FIELDS } from "@/model/climate/gcm/fields"
 import { LAYOUT } from "@/model/climate/gcm/layout"
 import type {
 	GcmInstabilityDetailRequest,
@@ -188,6 +189,8 @@ async function start(request: GcmWorkerStart) {
 		truncation: request.truncation,
 		levels: request.layers,
 		namelists: request.files,
+		oceanDiffusivityM2S: request.config.oceanDiffusivityM2S,
+		oceanCurrents: request.config.oceanCurrents,
 	}
 	const initial = SETUP.state({ ...setup, clock: Date.now() })
 	const schedule = SETUP.schedule({ request: setup, state: initial })
@@ -392,6 +395,11 @@ function submit(current: GcmWorkerModel) {
 	inFlight++
 	const submitted = performance.now()
 	const floats = context.state.slots.snapshot.floats
+	const points =
+		context.state.dimensions.latitudes * context.state.dimensions.longitudes
+	const fields = GCM_FIELDS.fieldCount(
+		context.state.dimensions.levels as GcmLayerCount,
+	)
 	const bytes = STEPPER.TIMING_BYTES + published * floats * 4
 	// Mapping resolves once the GPU has written the batch, so it is also the
 	// completion signal: one callback, which arrives on a display frame,
@@ -428,6 +436,8 @@ function submit(current: GcmWorkerModel) {
 		lastDone = finished
 		const snapshots = Array.from({ length: published }, (_, i) => {
 			const at = firstPublish + i * publishEvery
+			const base = i * floats
+			const publishedFields = fields * points
 			return {
 				layers: context.state.dimensions.levels as GcmLayerCount,
 				step: at,
@@ -437,11 +447,17 @@ function submit(current: GcmWorkerModel) {
 					daysPerYear: calendar.daysPerYear,
 					stepMinutes: calendar.stepMinutes,
 				}),
-				values: data.slice(i * floats, (i + 1) * floats),
+				values: data.slice(base, base + publishedFields),
+				currents: data.slice(
+					base + publishedFields,
+					base + publishedFields + 2 * points,
+				),
 			}
 		})
 		const unstable = snapshots.find(
-			(snapshot) => !snapshot.values.every(Number.isFinite),
+			(snapshot) =>
+				!snapshot.values.every(Number.isFinite) ||
+				!snapshot.currents.every(Number.isFinite),
 		)
 		if (unstable) {
 			const detail = describeInstability({

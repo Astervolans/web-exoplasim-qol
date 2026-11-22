@@ -70,6 +70,7 @@ function close(accumulator: GcmMonthAccumulator): GcmMonthlyMean {
 				minute: 0,
 			},
 			values,
+			currents: accumulator.last.currents,
 		},
 	}
 }
@@ -124,6 +125,7 @@ function annual(averager: GcmAverager): GcmSnapshot | null {
 		step: last.snapshot.step,
 		date: last.snapshot.date,
 		values,
+		currents: last.snapshot.currents,
 	}
 	const range = GCM_FIELDS.field({
 		snapshot,

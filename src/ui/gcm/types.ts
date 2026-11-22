@@ -265,6 +265,7 @@ export type GcmSliderKey = keyof Pick<
 	| "substellarLongitudeDeg"
 	| "soilDepthScale"
 	| "oceanDepthM"
+	| "oceanDiffusivityM2S"
 >
 
 export interface GcmSliderSpec {

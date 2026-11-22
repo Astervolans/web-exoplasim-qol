@@ -91,11 +91,8 @@ export function GcmView() {
 	const [requestedView, setView] = useState<GcmViewMode>("airTemperature")
 	const supportedView: GcmViewMode =
 		(!gcm.config.stormclim && GCM_FIELDS.stormMode(requestedView)) ||
-		(gcm.engine === "gpu" &&
-			requestedView !== "elevation" &&
-			requestedView !== "koppen" &&
-			requestedView !== "pasta" &&
-			!GCM_FIELDS.gpuSupports(requestedView))
+		(GCM_FIELDS.isFieldView(requestedView) &&
+			!GCM_FIELDS.available({ mode: requestedView, engine: gcm.engine }))
 			? "surfaceTemperature"
 			: requestedView
 	const requestedLayer = GCM_FIELDS.layer(supportedView)
@@ -441,11 +438,11 @@ export function GcmView() {
 							<SegmentedControl
 								options={modeGroup.children.filter(
 									(child) =>
-										gcm.engine !== "gpu" ||
-										child.value === "elevation" ||
-										child.value === "koppen" ||
-										child.value === "pasta" ||
-										GCM_FIELDS.gpuSupports(child.value),
+										!GCM_FIELDS.isFieldView(child.value) ||
+										GCM_FIELDS.available({
+											mode: child.value,
+											engine: gcm.engine,
+										}),
 								)}
 								value={groupView}
 								onChange={setView}

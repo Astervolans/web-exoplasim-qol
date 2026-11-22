@@ -44,6 +44,8 @@ export interface GcmConfig {
 	synchronous: boolean
 	substellarLongitudeDeg: number
 	oceanDepthM: number
+	oceanDiffusivityM2S: number
+	oceanCurrents: boolean
 	fluxWm2: number
 	starTemperatureK: number
 	starMassSolar: number
@@ -76,6 +78,10 @@ export interface GcmSnapshot {
 	step: number
 	date: GcmDate
 	values: Float32Array
+	// The ocean surface current's u and v planes, after `values`. The GPU
+	// engine fills them; the CPU engine leaves them zero, because its ocean is
+	// the Fortran slab with no current diagnostic.
+	currents: Float32Array
 }
 
 export interface GcmElevationRaster {

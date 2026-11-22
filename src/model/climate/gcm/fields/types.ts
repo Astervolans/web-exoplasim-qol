@@ -1,3 +1,4 @@
+import type { GcmEngine } from "@/model/climate/gcm/runner/types"
 import type { GcmSnapshot } from "@/model/climate/gcm/types"
 
 export type GcmLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
@@ -28,6 +29,8 @@ export type GcmFieldId =
 	| "netPrimaryProduction"
 	| "solarZenithCosine"
 	| GcmStormFieldId
+	| "oceanCurrentU"
+	| "oceanCurrentV"
 	| "diurnalTemperatureRange"
 	| "dailyTemperatureRangeSum"
 	| "dailyTemperatureRangeDays"
@@ -73,6 +76,7 @@ export type GcmFieldId =
 export type GcmMapMode =
 	| "netPrimaryProduction"
 	| "solarZenithCosine"
+	| "oceanCurrent"
 	| GcmStormFieldId
 	| "diurnalTemperatureRange"
 	| "convectivePrecipitation"
@@ -141,6 +145,14 @@ export type GcmStormModeDefinition = GcmModeDefinition & {
 export interface GcmModeRequest {
 	snapshot: GcmSnapshot
 	mode: GcmMapMode
+}
+
+// Whether a model map mode can be drawn on the selected engine: the GPU port
+// implements more diagnostics than the Fortran's published layout, and the
+// ocean-current diagnostic exists only on the GPU.
+export interface GcmModeAvailability {
+	mode: GcmMapMode
+	engine: GcmEngine
 }
 
 export interface GcmFieldRequest {

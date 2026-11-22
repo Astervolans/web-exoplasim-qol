@@ -22,6 +22,12 @@ export interface GcmSetupRequest {
 	truncation: number
 	levels: number
 	namelists: Record<string, string>
+	// [JUSTIFICATION] Optional because the verification scripts call SETUP from
+	// the model's inputs alone; omitting them leaves both features off, which is
+	// the model without the page's ocean controls. The GPU engine is the only
+	// reader, so they never reach a namelist.
+	oceanDiffusivityM2S?: number
+	oceanCurrents?: boolean
 }
 
 // The namelists plus so(1), the initial orography's mean spectral

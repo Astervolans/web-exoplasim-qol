@@ -20,6 +20,8 @@ export const ZH_MESSAGES: I18nMessages = {
 	"2 m air": "2 米气温",
 	Atmosphere: "大气层",
 	DTR: "日较差",
+	Currents: "海流",
+	"Ocean currents": "海洋流场",
 	"Lowest layer": "最低层",
 	"Jet stream": "急流",
 	"Total cover": "总云量",

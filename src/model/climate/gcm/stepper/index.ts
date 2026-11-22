@@ -16,6 +16,7 @@ import { LEGENDRE } from "@/model/climate/gcm/legendre"
 import { CARBON } from "@/model/climate/gcm/physics/carbon"
 import { FIXER } from "@/model/climate/gcm/physics/fixer"
 import { LAND } from "@/model/climate/gcm/physics/land"
+import { OCEAN } from "@/model/climate/gcm/physics/ocean"
 import { PRECIPITATION } from "@/model/climate/gcm/physics/precipitation"
 import { RADIATION } from "@/model/climate/gcm/physics/radiation"
 import { STORM } from "@/model/climate/gcm/physics/storm"
@@ -85,6 +86,7 @@ function tables({
 		...RADIATION.tables({ grid, sigma, sigmah, dsigma, ga, acllwr }),
 		...PRECIPITATION.tables({ sigma, akap, rcritmod, rcritslope }),
 		...LAND.tables({ dsoilz }),
+		...OCEAN.tables({ grid }),
 		...dynamics,
 	}
 }
