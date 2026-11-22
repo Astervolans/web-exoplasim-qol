@@ -14,14 +14,18 @@ import { GCM_TERRAIN } from "@/model/climate/gcm/terrain"
 // File layout: magic, uint32 header length, JSON header, uint32 array bytes,
 // terrain and diagnostic arrays, then the unchanged plasim_status restart file.
 const MAGIC = "EXOPLASIM-CHECKPOINT\n"
-const FORMATS: Record<GcmEngine, number> = { cpu: 24, gpu: 25 }
+const FORMATS: Record<GcmEngine, number> = { cpu: 27, gpu: 28 }
 // Formats restored exactly: 22/23 differ from 24/25 only by the climatology a
-// trimmed save adds, which they simply lack. Older files carry no terrain
-// orientation and no star inputs, so they cannot be restored faithfully.
+// trimmed save adds, which they simply lack; 24/25 carry everything 27/28 do
+// except the two ocean-current planes, which load as zero until the next
+// snapshot. Older files carry no terrain orientation and no star inputs, so
+// they cannot be restored faithfully.
 const READABLE: Record<GcmEngine, ReadonlyArray<number>> = {
-	cpu: [FORMATS.cpu, 22],
-	gpu: [FORMATS.gpu, 23],
+	cpu: [FORMATS.cpu, 24],
+	gpu: [FORMATS.gpu, 25],
 }
+// The snapshot carries the two ocean-current planes after the model's fields.
+const SNAPSHOT_CURRENT_PLANES = 2
 const GPU_PRECISION_BYTES = 4
 const HEADER_LENGTH_BYTES = 4
 // Measured JSON headers run 51-56 KB at T63 with 132 monthly means and up to
@@ -112,7 +116,10 @@ function estimate({
 	restartBytes,
 }: GcmCheckpointSizeRequest): number {
 	const points = GCM_GRID.forTruncation(config.truncation).points
-	const snapshot = points * GCM_FIELDS.fieldCount(config.layers) * 4
+	const snapshot =
+		points *
+		(GCM_FIELDS.fieldCount(config.layers) + SNAPSHOT_CURRENT_PLANES) *
+		4
 	const years = Math.max(
 		1,
 		Math.min(historyYears, GCM_AVERAGES.MAX_HISTORY_YEARS),
@@ -152,7 +159,7 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 	const saved = savedEngine(parsed.meta.format)
 	if (!saved)
 		throw new Error(
-			`Unsupported checkpoint format ${parsed.meta.format}. This build loads formats 22 to 25.`,
+			`Unsupported checkpoint format ${parsed.meta.format}. This build loads formats 22 to 28.`,
 		)
 	// Older but restorable files become current ones, so a re-save writes the
 	// current format.
@@ -209,11 +216,16 @@ function decode(buffer: ArrayBuffer): GcmCheckpoint {
 	]
 	const points = GCM_GRID.forTruncation(meta.config.truncation).points
 	const expectedValues = points * GCM_FIELDS.fieldCount(meta.config.layers)
+	// Formats before the current planes have none; the layer reads as still
+	// water until the resumed run publishes its first snapshot.
+	const expectedCurrents = points * SNAPSHOT_CURRENT_PLANES
 	if (
 		snapshots.some(
 			(snapshot) =>
 				snapshot.layers !== meta.config.layers ||
-				snapshot.values.length !== expectedValues,
+				snapshot.values.length !== expectedValues ||
+				(snapshot.currents !== undefined &&
+					snapshot.currents.length !== expectedCurrents),
 		) ||
 		(averager.current && averager.current.sum.length !== expectedValues)
 	)

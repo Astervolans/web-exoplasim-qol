@@ -16,6 +16,8 @@ const EDITABLE: ReadonlyArray<keyof GcmConfig> = [
 	"fixedOrbit",
 	"targetTemperatureK",
 	"oceanDepthM",
+	"oceanDiffusivityM2S",
+	"oceanCurrents",
 	"landAlbedo",
 	"oceanAlbedo",
 	"snowIceAlbedo",

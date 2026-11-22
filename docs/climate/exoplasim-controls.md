@@ -25,6 +25,8 @@ Each settings input has a question-circle icon explaining its meaning, effect on
 | Show sub-stellar and anti-stellar points | Off | On/off; shown after tidally locked illumination is enabled | Display only; no model setting |
 | Show tropics and polar circles | Off | On/off; shown while tidally locked illumination is off | Display only; no model setting |
 | Ocean mixed-layer depth | 50 m | 1–200 m, steps of 1 | `MLDEPTH` in `oceanmod_namelist` |
+| Ocean heat transport | Off | 0–200,000 m²/s, steps of 5,000; GPU engine only | `oceanDiffusivityM2S`; [method, literature and benchmarks](ocean-circulation.md) |
+| Ocean currents layer | On | On/off; GPU engine only | `oceanCurrents`; fills the map's Ocean → Currents layer, [method and measurements](ocean-circulation.md) |
 | Land albedo override | Unset (native behavior) | 0–1, steps of 0.001 when enabled | `ALBLAND`, `DGROUNDALB`; removes the land-albedo surface map |
 | Ocean albedo override | Unset (native behavior) | 0–1, steps of 0.001 when enabled | `ALBSEA`, `DOCEANALB` |
 | Snow/ice albedo override | Unset (native behavior) | 0–1, steps of 0.001 when enabled | Upstream `snowicealbedo` namelist mapping |
@@ -151,7 +153,7 @@ Climate groups Köppen and Pasta child modes. Both classify the last 12 complete
 
 ## Save format and verification
 
-Checkpoint formats 24 (CPU) and 25 (GPU) store snapshots, interval/monthly temperature extrema, settings, terrain (with its map orientation), unfinished monthly accumulation, the saved monthly means, the climatology they were reduced to, the engine restart and automatic temperature-targeting progress/history. Files in formats 22 (CPU) and 23 (GPU) still load: they hold the same configuration and field layout, only without the saved climatology, whose months they still carry, and a re-save writes the current format. Formats 21 and older are rejected because they carry neither the terrain orientation nor the star inputs. Loading remains paused until Resume.
+Checkpoint formats 27 (CPU) and 28 (GPU) store snapshots, interval/monthly temperature extrema, settings, terrain (with its map orientation), unfinished monthly accumulation, the saved monthly means, the climatology they were reduced to, the engine restart and automatic temperature-targeting progress/history, plus the two ocean-current planes each snapshot carries. Files in formats 22 to 25 still load: the sea-surface snapshot gains two zero planes, so the current layer reads as still water until the resumed run publishes again, and a re-save writes the current format. Formats 21 and older are rejected because they carry neither the terrain orientation nor the star inputs. Loading remains paused until Resume.
 
 Save opens a dialog that sets the history first: the checkpoint keeps the newest 1 to 11 years of completed monthly means as raw fields, starting at one year. Raw fields dominate the file: one T63 ten-layer month is 7.1 MiB, so the former fixed 11-year window was 0.98 GiB of a 1.09 GiB file. The months outside the chosen window are reduced to the twelve monthly means of the run's climatology (up to ten years) and saved with their year count, so Köppen/Pasta maps and climate classifications survive a reload. A resumed run weights that saved climatology against its own complete years and keeps counting to ten; the dropped months themselves cannot come back. With ten or eleven saved years the climatology is derivable from the months, so it is not stored twice.
 

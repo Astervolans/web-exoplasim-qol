@@ -86,7 +86,7 @@ async function kernels({
 				}),
 			]
 		: []
-	return Promise.all([
+	const kernels = await Promise.all([
 		KERNEL.pipeline({
 			context,
 			label: "land soil",
@@ -141,6 +141,51 @@ async function kernels({
 			},
 		}),
 	])
+	const { slots } = context.state
+	const DLAM = (2 * Math.PI) / longitudes
+	const plan = OCEAN.transport({
+		diffusivity: ocean.HCOND,
+		stepSeconds: ocean.DTMIX,
+		dimensions: context.state.dimensions,
+	})
+	const transports =
+		plan === null
+			? []
+			: await Promise.all(
+					Array.from({ length: plan.steps }, (_, step) =>
+						KERNEL.pipeline({
+							context,
+							label: `ocean transport ${step}`,
+							code: OCEAN.TRANSPORT_CODE,
+							constants: {
+								THREADS,
+								HCOND: ocean.HCOND,
+								TAU: plan.tauSeconds,
+								DLAM,
+								INVR2: 1 / (OCEAN.PLARAD * OCEAN.PLARAD),
+								SRC: step % 2 === 0 ? slots.ysst.offset : slots.ysst_old.offset,
+								DST: step % 2 === 0 ? slots.ysst_old.offset : slots.ysst.offset,
+							},
+						}),
+					),
+				)
+	// The wind-driven current is a diagnostic of the step's wind stress, so it
+	// runs after the sea kernel that computes it.
+	const currents =
+		ocean.CURRENTS === 0
+			? []
+			: [
+					await KERNEL.pipeline({
+						context,
+						label: "ocean current",
+						code: OCEAN.CURRENT_CODE,
+						constants: {
+							THREADS,
+							...OCEAN.currentConstants({ omega: ocean.OMEGA }),
+						},
+					}),
+				]
+	return [...kernels, ...transports, ...currents]
 }
 
 export const SURFACE = {

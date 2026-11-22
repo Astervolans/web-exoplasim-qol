@@ -265,6 +265,7 @@ export type GcmSliderKey = keyof Pick<
 	| "substellarLongitudeDeg"
 	| "soilDepthScale"
 	| "oceanDepthM"
+	| "oceanDiffusivityM2S"
 >
 
 export interface GcmSliderSpec {
@@ -301,6 +302,7 @@ export type GcmHelpKey =
 	| "wetSoil"
 	| "glaciers"
 	| "vegetation"
+	| "oceanCurrents"
 	| "starMassSolar"
 	| "starAgeGyr"
 	| "planetMassEarth"

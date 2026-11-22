@@ -72,6 +72,7 @@ const NORMALIZED_SCALES: Partial<Record<GcmMapMode, GcmColorScale>> = {
 	soilWater: stops(COLOR_PALETTES.bupuStops),
 	albedo: stops(COLOR_PALETTES.orangesStops),
 	outgoingLongwave: stops(COLOR_PALETTES.ylOrRdStops),
+	oceanCurrent: stops(COLOR_PALETTES.bupuStops),
 }
 
 function color({ mode, value }: GcmModeValue): RgbColor {
@@ -143,6 +144,9 @@ function format({ mode, value, unitSystem }: GcmFormattedValue): string {
 		["cape", "neutralBuoyancyPressure", "potentialIntensity"].includes(mode)
 	)
 		return I18N.t("Unavailable")
+	// A 5 cm/s display range needs the extra digit: one decimal renders the top
+	// of the scale as "0.1 m/s", twice its real value.
+	if (mode === "oceanCurrent") return formatSpeed(value, unitSystem, 2)
 	switch (GCM_FIELDS.definition(mode).unit) {
 		case "gramsCarbonPerSquareMeterPerDay":
 			return formatWithUnit(value, "g C/m²/day", 2)

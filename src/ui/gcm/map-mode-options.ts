@@ -27,6 +27,11 @@ const GROUPS: ReadonlyArray<GcmModeGroup> = [
 		],
 	},
 	{
+		label: "Ocean",
+		defaultView: "oceanCurrent",
+		children: [{ value: "oceanCurrent", label: "Currents" }],
+	},
+	{
 		label: "Clouds",
 		defaultView: "cloudCover",
 		children: [

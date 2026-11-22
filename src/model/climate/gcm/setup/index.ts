@@ -295,7 +295,14 @@ function constants(request: GcmSetupConstantsRequest): GcmSetup {
 					TFREEZE: ice.tfreeze,
 					...ICE,
 				},
-				ocean: { DTMIX: dtmix, CPS },
+				ocean: {
+					DTMIX: dtmix,
+					CPS,
+					HCOND:
+						request.oceanDiffusivityM2S > 0 ? request.oceanDiffusivityM2S : 0,
+					CURRENTS: request.oceanCurrents ? 1 : 0,
+					OMEGA: pumamod.ww,
+				},
 				sea: {
 					RDBRV: rdbrv,
 					RA1: ra1,

@@ -48,6 +48,9 @@ function publish(fields: ExoplasimPublishedFields) {
 		)
 	}
 	const [year, month, day, hour, minute] = fields.date
+	const currents = new Float32Array(
+		2 * (fields.values.length / GCM_FIELDS.fieldCount(loadedLayers)),
+	)
 	const response: GcmWasmWorkerResponse = {
 		type: "snapshot",
 		snapshot: {
@@ -55,9 +58,13 @@ function publish(fields: ExoplasimPublishedFields) {
 			step: fields.step,
 			date: { year, month, day, hour, minute },
 			values: fields.values,
+			// The Fortran slab has no current diagnostic.
+			currents,
 		},
 	}
-	self.postMessage(response, { transfer: [fields.values.buffer] })
+	self.postMessage(response, {
+		transfer: [fields.values.buffer, currents.buffer],
+	})
 }
 
 function prepareFiles(request: GcmWasmWorkerLoad) {
@@ -102,6 +109,8 @@ function prepareFiles(request: GcmWasmWorkerLoad) {
 				truncation: request.previousConfig.truncation,
 				levels: request.layers,
 				namelists,
+				oceanDiffusivityM2S: request.previousConfig.oceanDiffusivityM2S,
+				oceanCurrents: request.previousConfig.oceanCurrents,
 				clock: 0,
 			})
 			const fields = GCM_CONTINUATION.fields({

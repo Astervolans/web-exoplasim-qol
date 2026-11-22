@@ -20,6 +20,17 @@ const DEFAULT_CONFIG: GcmConfig = {
 	synchronous: false,
 	substellarLongitudeDeg: 180,
 	oceanDepthM: 50,
+	// PlaSim's hdiffo, off: 0 leaves the mixed layer with no heat transport,
+	// which is what every saved run and reference climate used. The panel
+	// offers up to OCEAN_DIFFUSIVITY_MAX_M2S, the largest value whose explicit
+	// sub-steps stay within a bounded dispatch count at T63
+	// (docs/climate/ocean-circulation.md).
+	oceanDiffusivityM2S: 0,
+	// The GPU engine's wind-driven current diagnostic, drawn as the map's Ocean
+	// → Currents arrows. On by default so the layer is meaningful as soon as a
+	// run starts; it costs one dispatch per step. The CPU engine has no
+	// counterpart, so the panel offers the switch only there.
+	oceanCurrents: true,
 	fluxWm2: 1367,
 	starTemperatureK: 5778,
 	starMassSolar: 1,
@@ -51,7 +62,12 @@ const DEFAULT_CONFIG: GcmConfig = {
 // value is left unset.
 const PERIAPSE_LONGITUDE_DEG = 102.7
 
+// The mixed layer's diffusivity ceiling: 2e5 m²/s keeps the explicit
+// sub-steps stable within 160 extra dispatches at T63 with a 45-minute step.
+const OCEAN_DIFFUSIVITY_MAX_M2S = 200000
+
 export const GCM = {
 	DEFAULT_CONFIG,
 	PERIAPSE_LONGITUDE_DEG,
+	OCEAN_DIFFUSIVITY_MAX_M2S,
 }
