@@ -302,6 +302,7 @@ export type GcmHelpKey =
 	| "wetSoil"
 	| "glaciers"
 	| "vegetation"
+	| "oceanCurrents"
 	| "starMassSolar"
 	| "starAgeGyr"
 	| "planetMassEarth"

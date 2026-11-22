@@ -26,10 +26,11 @@ const DEFAULT_CONFIG: GcmConfig = {
 	// sub-steps stay within a bounded dispatch count at T63
 	// (docs/climate/ocean-circulation.md).
 	oceanDiffusivityM2S: 0,
-	// The GPU engine's wind-driven current diagnostic (Sverdrup transport from
-	// the surface wind stress, shown as map arrows). The CPU engine has no
-	// counterpart, so the panel offers it only there.
-	oceanCurrents: false,
+	// The GPU engine's wind-driven current diagnostic, drawn as the map's Ocean
+	// → Currents arrows. On by default so the layer is meaningful as soon as a
+	// run starts; it costs one dispatch per step. The CPU engine has no
+	// counterpart, so the panel offers the switch only there.
+	oceanCurrents: true,
 	fluxWm2: 1367,
 	starTemperatureK: 5778,
 	starMassSolar: 1,

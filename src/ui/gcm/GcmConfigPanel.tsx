@@ -424,7 +424,20 @@ export function GcmConfigPanel({
 		surface: (
 			<>
 				{renderSlider(OCEAN_DEPTH_SLIDER)}
-				{renderSlider(OCEAN_DIFFUSIVITY_SLIDER)}
+				{/* Both ocean features exist only on the GPU engine, whose setup
+				    builds the kernels; the CPU engine has no counterpart. */}
+				{engine === "gpu" && (
+					<>
+						{renderSlider(OCEAN_DIFFUSIVITY_SLIDER)}
+						<ToggleRow
+							label={I18N.t("Ocean currents")}
+							help={GCM_INPUT_HELP.oceanCurrents}
+							checked={config.oceanCurrents}
+							disabled={isDisabled("oceanCurrents")}
+							onChange={(oceanCurrents) => update({ oceanCurrents })}
+						/>
+					</>
+				)}
 				<fieldset disabled={disabled || locked} className="space-y-1">
 					<span className={label}>
 						<InputLabel

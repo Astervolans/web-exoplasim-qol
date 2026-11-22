@@ -22,6 +22,7 @@ export const ZH_MESSAGES: I18nMessages = {
 	DTR: "日较差",
 	Currents: "海流",
 	"Ocean currents": "海洋流场",
+	"Ocean heat transport": "海洋热输运",
 	"Lowest layer": "最低层",
 	"Jet stream": "急流",
 	"Total cover": "总云量",

@@ -11,7 +11,7 @@ Implemented 2026-11-21. This adds two ocean features to the WebGPU engine: horiz
 | Sub-step count, metric tables, current constants, dispatch list | `src/model/climate/gcm/physics/ocean/index.ts`, `physics/surface/index.ts` |
 | State fields `ysst_old`, `ocean_u`, `ocean_v` | `physics/ocean/index.ts` |
 | Publish planes for the two current components | `snapshot/wgsl/pack.wgsl`, `snapshot/index.ts` |
-| Configuration, panel controls, help | `oceanDiffusivityM2S` (0–200,000 m²/s) and `oceanCurrents` |
+| Configuration, panel controls, help | `oceanDiffusivityM2S` (0–200,000 m²/s, off by default) and `oceanCurrents` (on by default) |
 | Map layer | `fields/`, `field-display.ts`, `map-mode-options.ts`, `GcmView.tsx` |
 | Snapshots | `GcmSnapshot.currents`, a two-plane array after `values` |
 
@@ -76,6 +76,8 @@ Magnitudes. With `ρ_w = 1030 kg/m³`, `H = 50 m` and `f` at 45° (1.03 × 10⁻
 
 Both components are published through the snapshot as two extra planes after the model's fields, so the map's existing vector renderer draws them without new drawing code.
 
+Reading the layer. The panel's **Ocean currents** switch is on by default and only exists on the GPU engine; the arrows are the Ekman drift of the step's wind stress, so they are only as meaningful as the wind field driving them. A fresh start begins from an isothermal atmosphere, and the panel's own spin-up estimate runs to years, so in the first days of a run the wind is still patchy and so are the currents: the banded trade and westerly structure of §3 appears as the climate settles, or immediately from a checkpoint of a spun-up run. The legend's range is 0–0.05 m/s in two decimals, because one decimal would print the top of that range as 0.1.
+
 ## 4. Verification
 
 `node scripts/exoplasim-webgpu/verify-ocean-transport.mjs` runs the diffusion kernels the model dispatches against a controlled field (a two-wavenumber SST pattern with a one-column land wall) for `K = 5e4, 1e5, 2e5` and one 1800 s step:
@@ -104,8 +106,9 @@ The contrast falls by 1.2 K (−4.4%): the tropics cool slightly and the poles w
 
 | Grid | Sea cells | Finite | Current on land | Mean speed | Peak speed | Peak wind stress |
 | --- | --- | --- | --- | --- | --- | --- |
-| T21 | 2048 | yes | 0 `m/s` | 0.022 `m/s` | 0.47 `m/s` | 0.34 Pa |
-| T63 | 18432 | yes | 0 `m/s` | 0.025 `m/s` | 0.50 `m/s` | 0.50 Pa |
+| T21 | 2048 | yes | 0 `m/s` | 0.022 `m/s` | 0.48 `m/s` | 0.34 Pa |
+| T42 | 8192 | yes | 0 `m/s` | 0.025 `m/s` | 0.50 `m/s` | 0.42 Pa |
+| T63 | 18432 | yes | 0 `m/s` | 0.026 `m/s` | 0.50 `m/s` | 0.50 Pa |
 
 The peak stress is in the physical band for a surface wind, the mean drift is a few centimetres per second, and land is exactly zero. The zonal mean zonal current reverses at the latitudes where the wind does: at T21, −0.18 m/s at 3°S (westward equatorial drift) and +0.0015 m/s at 42°N (eastward under the westerlies).
 

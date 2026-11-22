@@ -27,6 +27,7 @@ const SECTION_KEYS: Record<
 	surface: [
 		"oceanDepthM",
 		"oceanDiffusivityM2S",
+		"oceanCurrents",
 		"vegetation",
 		"initialGrowth",
 		"wetSoil",

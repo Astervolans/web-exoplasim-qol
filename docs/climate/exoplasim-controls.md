@@ -26,7 +26,7 @@ Each settings input has a question-circle icon explaining its meaning, effect on
 | Show tropics and polar circles | Off | On/off; shown while tidally locked illumination is off | Display only; no model setting |
 | Ocean mixed-layer depth | 50 m | 1–200 m, steps of 1 | `MLDEPTH` in `oceanmod_namelist` |
 | Ocean heat transport | Off | 0–200,000 m²/s, steps of 5,000; GPU engine only | `oceanDiffusivityM2S`; [method, literature and benchmarks](ocean-circulation.md) |
-| Ocean currents layer | Off | On/off; GPU engine only | `oceanCurrents`; [method and measurements](ocean-circulation.md) |
+| Ocean currents layer | On | On/off; GPU engine only | `oceanCurrents`; fills the map's Ocean → Currents layer, [method and measurements](ocean-circulation.md) |
 | Land albedo override | Unset (native behavior) | 0–1, steps of 0.001 when enabled | `ALBLAND`, `DGROUNDALB`; removes the land-albedo surface map |
 | Ocean albedo override | Unset (native behavior) | 0–1, steps of 0.001 when enabled | `ALBSEA`, `DOCEANALB` |
 | Snow/ice albedo override | Unset (native behavior) | 0–1, steps of 0.001 when enabled | Upstream `snowicealbedo` namelist mapping |

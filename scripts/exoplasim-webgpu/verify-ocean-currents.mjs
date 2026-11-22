@@ -27,7 +27,7 @@ try {
 			onLost: () => {},
 		})
 		const results = []
-		for (const truncation of [21, 63]) {
+		for (const truncation of [21, 42, 63]) {
 			const grid = GCM_GRID.forTruncation(truncation)
 			const dimensions = {
 				truncation,
