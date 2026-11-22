@@ -358,6 +358,7 @@ try {
 	await page.screenshot({ path: path.join(output, "layers.png"), animations: "disabled" })
 	const downloadEvent = page.waitForEvent("download")
 	await page.getByRole("button", { name: "Save", exact: true }).click()
+	await page.getByRole("button", { name: "Save checkpoint", exact: true }).click()
 	const download = await downloadEvent
 	const checkpointPath = path.join(output, download.suggestedFilename())
 	await download.saveAs(checkpointPath)

@@ -165,6 +165,7 @@ try {
 	await page.getByRole("button", { name: "Pause", exact: true }).click()
 	const downloadEvent = page.waitForEvent("download", { timeout: 60000 })
 	await page.getByRole("button", { name: "Save", exact: true }).click()
+	await page.getByRole("button", { name: "Save checkpoint", exact: true }).click()
 	const download = await downloadEvent
 	const checkpointFile = path.join(output, "custom-terrain.ckpt")
 	await download.saveAs(checkpointFile)
